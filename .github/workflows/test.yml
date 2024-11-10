@@ -1,0 +1,45 @@
+name: test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install codeforces's rust
+        uses: dtolnay/rust-toolchain@1.75.0
+        with:
+          components: rustfmt, clippy
+
+      - name: Print versions
+        run: |
+          cargo --version
+          rustc --version
+          cargo clippy --version
+          cargo fmt --version
+
+      - name: Check homework 1 example code
+        working-directory: hw1/apples
+        run: |
+          cargo clippy --verbose -- -Dwarnings
+          cargo fmt --check --verbose
+          cargo test --verbose
+          cargo build --verbose
+
+      - name: Check homework 1 code
+        working-directory: hw1/kittens
+        run: |
+          cargo clippy --verbose -- -Dwarnings
+          cargo fmt --check --verbose
+          cargo test --verbose
+          cargo build --verbose
