@@ -472,14 +472,14 @@ impl Input {
         // check if field order is big enough
         assert!(FIELD_ORDER >= max(wmax * self.n + 1, self.n * self.n));
 
-        let alpha = Matrix::<FIELD_ORDER>::new_uniform_random(self.n);
+        let alpha = Matrix::new_uniform_random(self.n);
 
         fn h_matrix_det(
             y: Zp<FIELD_ORDER>,
             x: &Matrix<FIELD_ORDER>,
             edge_set: &HashMap<(usize, usize), usize>,
         ) -> Zp<FIELD_ORDER> {
-            let mut h = Matrix::<FIELD_ORDER>::new(x.size());
+            let mut h = Matrix::new(x.size());
             for i in 0..h.size() {
                 for j in 0..h.size() {
                     h[(i, j)] = if let Some(cost) = edge_set.get(&(i, j)) {
@@ -505,20 +505,20 @@ impl Input {
             .collect::<HashMap<_, _>>();
 
         // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
-        let gammas = (1..=self.n * wmax + 1).collect::<Vec<_>>();
+        let gammas = (1..=self.n * wmax + 1).map(Zp::new).collect::<Vec<_>>();
 
         let p = {
             let mut p = Matrix::new(self.n * wmax + 1);
             for i in 0..p.size() {
                 for j in 0..p.size() {
-                    p[(i, j)] = Zp::new(gammas[i]).pow(j);
+                    p[(i, j)] = gammas[i].pow(j);
                 }
             }
             p
         };
         let r = gammas
             .into_iter()
-            .map(|gamma| h_matrix_det(Zp::new(gamma), &alpha, &edge_set))
+            .map(|gamma| h_matrix_det(gamma, &alpha, &edge_set))
             .collect::<Vec<_>>();
 
         let c = LinearEquationSystem::new(p, r).solve();
@@ -723,8 +723,8 @@ mod tests {
             let a = Zp::<FIELD_ORDER>::new(FIELD_ORDER);
             let b = Zp::<FIELD_ORDER>::new(FIELD_ORDER + 1);
 
-            assert_eq!(a, Zp::<FIELD_ORDER>::new(0));
-            assert_eq!(b, Zp::<FIELD_ORDER>::new(1));
+            assert_eq!(a, Zp::new(0));
+            assert_eq!(b, Zp::new(1));
         }
 
         #[test]
@@ -732,8 +732,8 @@ mod tests {
             let a = Zp::<FIELD_ORDER>::new(2);
             let b = Zp::<FIELD_ORDER>::new(3);
 
-            assert_eq!(a.mutliplicative_inverse(), Zp::<FIELD_ORDER>::new(10006));
-            assert_eq!(b.mutliplicative_inverse(), Zp::<FIELD_ORDER>::new(13341));
+            assert_eq!(a.mutliplicative_inverse(), Zp::new(10006));
+            assert_eq!(b.mutliplicative_inverse(), Zp::new(13341));
         }
 
         #[test]
@@ -746,36 +746,32 @@ mod tests {
         fn addition() {
             let a = Zp::<FIELD_ORDER>::new(1);
             let b = Zp::<FIELD_ORDER>::new(2);
-            let c = Zp::<FIELD_ORDER>::new(3);
 
-            assert_eq!(a + b, c);
+            assert_eq!(a + b, Zp::new(3));
         }
 
         #[test]
         fn subtraction() {
             let a = Zp::<FIELD_ORDER>::new(1);
             let b = Zp::<FIELD_ORDER>::new(2);
-            let c = Zp::<FIELD_ORDER>::new(FIELD_ORDER - 1);
 
-            assert_eq!(a - b, c);
+            assert_eq!(a - b, Zp::new(FIELD_ORDER - 1));
         }
 
         #[test]
         fn multiplication() {
             let a = Zp::<FIELD_ORDER>::new(2);
             let b = Zp::<FIELD_ORDER>::new(FIELD_ORDER - 1);
-            let c = Zp::<FIELD_ORDER>::new(FIELD_ORDER - 2);
 
-            assert_eq!(a * b, c);
+            assert_eq!(a * b, Zp::new(FIELD_ORDER - 2));
         }
 
         #[test]
         fn division() {
             let a = Zp::<FIELD_ORDER>::new(6);
             let b = Zp::<FIELD_ORDER>::new(3);
-            let c = Zp::<FIELD_ORDER>::new(2);
 
-            assert_eq!(a / b, c);
+            assert_eq!(a / b, Zp::new(2));
         }
 
         #[test]
