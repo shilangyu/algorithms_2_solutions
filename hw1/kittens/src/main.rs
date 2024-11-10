@@ -65,9 +65,51 @@ impl FromIterator<String> for Input {
     }
 }
 
+/// The amount of train and car rides to be taken to exactly exhaust the budget.
+#[derive(Debug, PartialEq, Clone, Copy)]
+struct CountCombination {
+    train_count: usize,
+    car_count: usize,
+}
+
+impl CountCombination {
+    /// Returns `None` if there exists no such combination.
+    fn new(input: &Input) -> Option<Self> {
+        // Solve two equations for integer solutions:
+        // n = train_count + car_count
+        // budget = train_count * train_cost + car_count * car_cost
+        let (budget, n, train_cost, car_cost) = (
+            input.budget as i64,
+            input.n as i64,
+            input.train_cost as i64,
+            input.car_cost as i64,
+        );
+        let car_count = (budget - n * train_cost) / (car_cost - train_cost);
+        let train_count = n - car_count;
+
+        // Verify we got non-negative integer solutions by plugging it back to the equations.
+        if n == train_count + car_count
+            && budget == train_count * train_cost + car_count * car_cost
+            && train_count >= 0
+            && car_count >= 0
+        {
+            Some(CountCombination {
+                train_count: train_count as _,
+                car_count: car_count as _,
+            })
+        } else {
+            None
+        }
+    }
+}
+
 impl Input {
     /// Solves the problem.
-    fn solve(&self) -> bool {
+    fn solve(self) -> bool {
+        let Some(_) = CountCombination::new(&self) else {
+            return false;
+        };
+
         todo!()
     }
 }
@@ -110,12 +152,13 @@ mod tests {
 1 1 5
 ";
 
+    fn get(s: &str) -> Input {
+        s.lines().map(ToString::to_string).collect::<Input>()
+    }
+
     #[test]
     fn parses_example_inputs() {
-        let input = EXAMPLE_1
-            .lines()
-            .map(ToString::to_string)
-            .collect::<Input>();
+        let input = get(EXAMPLE_1);
         assert_eq!(
             input,
             Input {
@@ -158,10 +201,7 @@ mod tests {
             }
         );
 
-        let input = EXAMPLE_2
-            .lines()
-            .map(ToString::to_string)
-            .collect::<Input>();
+        let input = get(EXAMPLE_2);
         assert_eq!(
             input,
             Input {
@@ -204,10 +244,7 @@ mod tests {
             }
         );
 
-        let input = EXAMPLE_3
-            .lines()
-            .map(ToString::to_string)
-            .collect::<Input>();
+        let input = get(EXAMPLE_3);
         assert_eq!(
             input,
             Input {
@@ -229,5 +266,29 @@ mod tests {
                 ]
             },
         );
+    }
+
+    #[test]
+    fn finds_correct_count_combinations() {
+        let input = get(EXAMPLE_1);
+        assert_eq!(
+            CountCombination::new(&input),
+            Some(CountCombination {
+                train_count: 2,
+                car_count: 1
+            })
+        );
+
+        let input = get(EXAMPLE_2);
+        assert_eq!(
+            CountCombination::new(&input),
+            Some(CountCombination {
+                train_count: 2,
+                car_count: 1
+            })
+        );
+
+        let input = get(EXAMPLE_3);
+        assert_eq!(CountCombination::new(&input), None);
     }
 }
