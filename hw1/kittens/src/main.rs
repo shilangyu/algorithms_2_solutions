@@ -494,12 +494,7 @@ impl Input {
         let edge_set = self
             .connections
             .iter()
-            .flat_map(|c| {
-                [
-                    ((c.volunteer, c.city), c.cost),
-                    ((c.city, c.volunteer), c.cost),
-                ]
-            })
+            .map(|c| ((c.volunteer, c.city), c.cost))
             .collect::<HashMap<_, _>>();
 
         // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
