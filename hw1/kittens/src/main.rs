@@ -1,4 +1,18 @@
-use std::io::{self, BufRead};
+/// Rust std has no random generators. This is based on:
+/// https://github.com/rust-lang/rust/blob/1.55.0/library/core/src/slice/sort.rs#L559-L573
+fn random_numbers() -> impl Iterator<Item = u32> {
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
+
+    let mut random = RandomState::new().build_hasher().finish() as u32;
+    std::iter::repeat_with(move || {
+        random ^= random << 13;
+        random ^= random >> 17;
+        random ^= random << 5;
+        random
+    })
+}
+
 
 /// Represents a connection preference of a volunteer to a city and its cost.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -109,6 +123,14 @@ impl Input {
         let Some(_) = CountCombination::new(&self) else {
             return false;
         };
+
+        // TODO: rescale and shift to lower this number
+        let wmax = max(self.train_cost, self.car_cost);
+
+        // check if field order is big enough
+        assert!(FIELD_ORDER >= max(wmax * self.n + 1, self.n * self.n));
+
+        let alpha = Matrix::<FIELD_ORDER>::new_uniform_random(self.n);
 
         todo!()
     }
