@@ -1,5 +1,6 @@
 use std::{
     cmp::max,
+    collections::HashMap,
     io::{self, BufRead},
     ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub},
 };
@@ -364,7 +365,43 @@ impl Input {
 
         let alpha = Matrix::<FIELD_ORDER>::new_uniform_random(self.n);
 
+        fn h_matrix_det(
+            y: Zp<FIELD_ORDER>,
+            x: &Matrix<FIELD_ORDER>,
+            edge_set: &HashMap<(usize, usize), usize>,
+        ) -> Zp<FIELD_ORDER> {
+            let mut h = Matrix::<FIELD_ORDER>::new(x.size());
+            for i in 0..h.size() {
+                for j in 0..h.size() {
+                    h[(i, j)] = if let Some(cost) = edge_set.get(&(i, j)) {
+                        y.pow(*cost) * x[(i, j)]
+                    } else {
+                        Zp::ZERO
+                    };
+                }
+            }
+
+            h.det()
+        }
+
+        let edge_set = self
+            .connections
+            .into_iter()
+            .flat_map(|c| {
+                [
+                    ((c.volunteer, c.city), c.cost),
+                    ((c.city, c.volunteer), c.cost),
+                ]
+            })
+            .collect::<HashMap<_, _>>();
+
         // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
+        let gammas = 1..=self.n * wmax + 1;
+
+        let r = gammas
+            .into_iter()
+            .map(|gamma| h_matrix_det(Zp::new(gamma), &alpha, &edge_set))
+            .collect::<Vec<_>>();
 
         todo!()
     }
