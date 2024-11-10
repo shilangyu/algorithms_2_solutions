@@ -460,12 +460,14 @@ impl Input {
 
     /// Solves the problem.
     fn solve_once(&self) -> bool {
-        let Some(_) = CountCombination::new(self) else {
+        let Some(count_combination) = CountCombination::new(self) else {
             return false;
         };
 
-        // TODO: rescale and shift to lower this number
-        let wmax = max(self.train_cost, self.car_cost);
+        // We rescale weights: set train_cost to 1 and car_cost to 0
+        // this preserves the count combination. Budget is now equal to train_count.
+
+        let wmax = 1;
 
         // check if field order is big enough
         assert!(FIELD_ORDER >= max(wmax * self.n + 1, self.n * self.n));
@@ -494,7 +496,12 @@ impl Input {
         let edge_set = self
             .connections
             .iter()
-            .map(|c| ((c.volunteer, c.city), c.cost))
+            .map(|c| {
+                (
+                    (c.volunteer, c.city),
+                    if c.cost == self.train_cost { 1 } else { 0 },
+                )
+            })
             .collect::<HashMap<_, _>>();
 
         // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
@@ -517,7 +524,7 @@ impl Input {
         let c = LinearEquationSystem::new(p, r).solve();
 
         // TODO: Should it be +1?
-        c[self.budget] != Zp::ZERO
+        c[count_combination.train_count] != Zp::ZERO
     }
 }
 
@@ -778,6 +785,8 @@ mod tests {
 
             assert_eq!(a.pow(321), Zp::new(12023));
             assert_eq!(b.pow(14), Zp::new(340));
+            assert_eq!(a.pow(0), Zp::new(1));
+            assert_eq!(a.pow(1), Zp::new(123));
         }
     }
 
