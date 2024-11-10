@@ -1,7 +1,7 @@
 use std::{
     cmp::max,
     io::{self, BufRead},
-    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Sub},
+    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub},
 };
 
 /// Rust std has no random generators. This is based on:
@@ -62,6 +62,12 @@ impl<const P: usize> Div<Self> for Zp<P> {
 impl<const P: usize> AddAssign<Self> for Zp<P> {
     fn add_assign(&mut self, rhs: Zp<P>) {
         *self = *self + rhs;
+    }
+}
+
+impl<const P: usize> MulAssign<Self> for Zp<P> {
+    fn mul_assign(&mut self, rhs: Zp<P>) {
+        *self = *self * rhs;
     }
 }
 
@@ -208,6 +214,19 @@ impl<const P: usize> Matrix<P> {
         }
 
         (lower, upper)
+    }
+
+    // TODO: is this even correct?
+    fn det(&self) -> Zp<P> {
+        let (l, u) = self.lu_decompose();
+
+        let mut det = Zp::<P>::new(1);
+        for i in 0..self.size() {
+            det *= u[(i, i)];
+            det *= l[(i, i)];
+        }
+
+        det
     }
 }
 
