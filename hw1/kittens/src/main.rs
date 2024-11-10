@@ -96,10 +96,47 @@ impl<const P: usize> Zp<P> {
 }
 
 /// Represents a square matrix over a Zp field.
+/// Row-major indexing.
+#[derive(Debug, PartialEq)]
 struct Matrix<const P: usize> {
     data: Vec<Zp<P>>,
     // Invariant: size * size == data.len()
     size: usize,
+}
+
+impl<const P: usize> Mul<Matrix<P>> for Matrix<P> {
+    type Output = Matrix<P>;
+
+    fn mul(self, rhs: Matrix<P>) -> Self::Output {
+        assert_eq!(self.size(), rhs.size());
+
+        let n = self.size();
+        let mut res = Self::new(n);
+
+        for i in 0..n {
+            for j in 0..n {
+                for k in 0..n {
+                    res[(i, j)] += self[(i, k)] * rhs[(k, j)];
+                }
+            }
+        }
+
+        res
+    }
+}
+
+impl<const P: usize, const N: usize> From<[[usize; N]; N]> for Matrix<P> {
+    fn from(data: [[usize; N]; N]) -> Self {
+        let mut res = Self::new(N);
+
+        for i in 0..N {
+            for j in 0..N {
+                res[(i, j)] = Zp::<P>::new(data[i][j]);
+            }
+        }
+
+        res
+    }
 }
 
 impl<const P: usize> Index<(usize, usize)> for Matrix<P> {
@@ -139,6 +176,39 @@ impl<const P: usize> Matrix<P> {
         self.size
     }
 
+    fn lu_decompose(&self) -> (Self, Self) {
+        let n = self.size();
+        let mut lower = Self::new(n);
+        let mut upper = Self::new(n);
+
+        for i in 0..n {
+            for k in i..n {
+                let mut sum = Zp::<P>::ZERO;
+                for j in 0..i {
+                    sum += lower[(i, j)] * upper[(j, k)];
+                }
+
+                upper[(i, k)] = self[(i, k)] - sum;
+            }
+
+            dbg!(&upper);
+
+            for k in i..n {
+                if i == k {
+                    lower[(i, i)] = Zp::<P>::new(1);
+                } else {
+                    let mut sum = Zp::<P>::ZERO;
+                    for j in 0..i {
+                        sum += lower[(k, j)] * upper[(j, i)];
+                    }
+
+                    lower[(k, i)] = (self[(k, i)] - sum) / upper[(i, i)];
+                }
+            }
+        }
+
+        (lower, upper)
+    }
 }
 
 /// Represents a connection preference of a volunteer to a city and its cost.
@@ -527,7 +597,15 @@ mod tests {
 
         #[test]
         fn lu_decompose() {
-            // FIXME
+            let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
+            let (l, u) = m.lu_decompose();
+
+            assert_eq!(l * u, m);
+
+            let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
+            let (l, u) = m.lu_decompose();
+
+            assert_eq!(l * u, m);
         }
     }
 }
