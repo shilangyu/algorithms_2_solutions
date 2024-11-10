@@ -1,3 +1,9 @@
+use std::{
+    cmp::max,
+    io::{self, BufRead},
+    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Sub},
+};
+
 /// Rust std has no random generators. This is based on:
 /// https://github.com/rust-lang/rust/blob/1.55.0/library/core/src/slice/sort.rs#L559-L573
 fn random_numbers() -> impl Iterator<Item = u32> {
@@ -13,6 +19,127 @@ fn random_numbers() -> impl Iterator<Item = u32> {
     })
 }
 
+/// A prime number used for Zp arithmetic. Number chosen to be big enough to handle the problem.
+const FIELD_ORDER: usize = 20011;
+
+/// Represents an element of the field Z/pZ for a prime number `P`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Zp<const P: usize>(usize);
+
+impl<const P: usize> Add<Self> for Zp<P> {
+    type Output = Self;
+
+    fn add(self, rhs: Zp<P>) -> Self::Output {
+        Self((self.0 + rhs.0) % P)
+    }
+}
+
+impl<const P: usize> Mul<Self> for Zp<P> {
+    type Output = Self;
+
+    fn mul(self, rhs: Zp<P>) -> Self::Output {
+        Self((self.0 * rhs.0) % P)
+    }
+}
+
+impl<const P: usize> Sub<Self> for Zp<P> {
+    type Output = Self;
+
+    fn sub(self, rhs: Zp<P>) -> Self::Output {
+        Self((self.0 + P - rhs.0) % P)
+    }
+}
+
+impl<const P: usize> Div<Self> for Zp<P> {
+    type Output = Self;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn div(self, rhs: Zp<P>) -> Self::Output {
+        self * rhs.mutliplicative_inverse()
+    }
+}
+
+impl<const P: usize> AddAssign<Self> for Zp<P> {
+    fn add_assign(&mut self, rhs: Zp<P>) {
+        *self = *self + rhs;
+    }
+}
+
+impl<const P: usize> Zp<P> {
+    const ZERO: Self = Self::new(0);
+
+    const fn new(value: usize) -> Self {
+        Self(value % P)
+    }
+
+    /// Finds a `b` such that `a * b = 1 (mod P)`.
+    /// Fails for `a = 0`.
+    fn mutliplicative_inverse(&self) -> Self {
+        if self == &Self::ZERO {
+            panic!("Multiplicative inverse of zero is undefined");
+        }
+
+        // Extended Euclidean algorithm
+        let (mut old_r, mut r) = (self.0 as i64, P as i64);
+        let (mut old_s, mut s) = (1, 0);
+        let (mut old_t, mut t) = (0, 1);
+
+        while r != 0 {
+            let quotient = old_r / r;
+            (old_r, r) = (r, old_r - quotient * r);
+            (old_s, s) = (s, old_s - quotient * s);
+            (old_t, t) = (t, old_t - quotient * t);
+        }
+
+        Self::new(if old_s < 0 { P as i64 + old_s } else { old_s } as _)
+    }
+}
+
+/// Represents a square matrix over a Zp field.
+struct Matrix<const P: usize> {
+    data: Vec<Zp<P>>,
+    // Invariant: size * size == data.len()
+    size: usize,
+}
+
+impl<const P: usize> Index<(usize, usize)> for Matrix<P> {
+    type Output = Zp<P>;
+
+    fn index(&self, index: (usize, usize)) -> &Self::Output {
+        let (i, j) = index;
+        &self.data[i * self.size() + j]
+    }
+}
+
+impl<const P: usize> IndexMut<(usize, usize)> for Matrix<P> {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        let (i, j) = index;
+        let n = self.size();
+        &mut self.data[i * n + j]
+    }
+}
+
+impl<const P: usize> Matrix<P> {
+    fn new(size: usize) -> Self {
+        let data = vec![Zp::<P>::ZERO; size * size];
+
+        Self { data, size }
+    }
+
+    fn new_uniform_random(size: usize) -> Self {
+        let data = random_numbers()
+            .take(size * size)
+            .map(|n| Zp::<P>::new(n as _))
+            .collect();
+
+        Self { data, size }
+    }
+
+    const fn size(&self) -> usize {
+        self.size
+    }
+
+}
 
 /// Represents a connection preference of a volunteer to a city and its cost.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -88,7 +215,7 @@ struct CountCombination {
 
 impl CountCombination {
     /// Returns `None` if there exists no such combination.
-    fn new(input: &Input) -> Option<Self> {
+    const fn new(input: &Input) -> Option<Self> {
         // Solve two equations for integer solutions:
         // n = train_count + car_count
         // budget = train_count * train_cost + car_count * car_cost
@@ -131,6 +258,8 @@ impl Input {
         assert!(FIELD_ORDER >= max(wmax * self.n + 1, self.n * self.n));
 
         let alpha = Matrix::<FIELD_ORDER>::new_uniform_random(self.n);
+
+        // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
 
         todo!()
     }
@@ -312,5 +441,93 @@ mod tests {
 
         let input = get(EXAMPLE_3);
         assert_eq!(CountCombination::new(&input), None);
+    }
+
+    #[test]
+    fn field_order_is_prime() {
+        for i in 2..FIELD_ORDER {
+            assert!(FIELD_ORDER % i != 0);
+        }
+    }
+
+    mod zp {
+        use super::*;
+
+        #[test]
+        fn creation() {
+            let a = Zp::<FIELD_ORDER>::new(FIELD_ORDER);
+            let b = Zp::<FIELD_ORDER>::new(FIELD_ORDER + 1);
+
+            assert_eq!(a, Zp::<FIELD_ORDER>::new(0));
+            assert_eq!(b, Zp::<FIELD_ORDER>::new(1));
+        }
+
+        #[test]
+        fn multiplicative_inverses() {
+            let a = Zp::<FIELD_ORDER>::new(2);
+            let b = Zp::<FIELD_ORDER>::new(3);
+
+            assert_eq!(a.mutliplicative_inverse(), Zp::<FIELD_ORDER>::new(10006));
+            assert_eq!(b.mutliplicative_inverse(), Zp::<FIELD_ORDER>::new(13341));
+        }
+
+        #[test]
+        #[should_panic]
+        fn zero_has_no_multiplicative_inverse() {
+            Zp::<FIELD_ORDER>::ZERO.mutliplicative_inverse();
+        }
+
+        #[test]
+        fn addition() {
+            let a = Zp::<FIELD_ORDER>::new(1);
+            let b = Zp::<FIELD_ORDER>::new(2);
+            let c = Zp::<FIELD_ORDER>::new(3);
+
+            assert_eq!(a + b, c);
+        }
+
+        #[test]
+        fn subtraction() {
+            let a = Zp::<FIELD_ORDER>::new(1);
+            let b = Zp::<FIELD_ORDER>::new(2);
+            let c = Zp::<FIELD_ORDER>::new(FIELD_ORDER - 1);
+
+            assert_eq!(a - b, c);
+        }
+
+        #[test]
+        fn multiplication() {
+            let a = Zp::<FIELD_ORDER>::new(2);
+            let b = Zp::<FIELD_ORDER>::new(FIELD_ORDER - 1);
+            let c = Zp::<FIELD_ORDER>::new(FIELD_ORDER - 2);
+
+            assert_eq!(a * b, c);
+        }
+
+        #[test]
+        fn division() {
+            let a = Zp::<FIELD_ORDER>::new(6);
+            let b = Zp::<FIELD_ORDER>::new(3);
+            let c = Zp::<FIELD_ORDER>::new(2);
+
+            assert_eq!(a / b, c);
+        }
+    }
+
+    mod matrix {
+        use super::*;
+
+        #[test]
+        fn creation() {
+            let m = Matrix::<FIELD_ORDER>::new(3);
+
+            assert_eq!(m.size(), 3);
+            assert_eq!(m.data.len(), 9);
+        }
+
+        #[test]
+        fn lu_decompose() {
+            // FIXME
+        }
     }
 }
