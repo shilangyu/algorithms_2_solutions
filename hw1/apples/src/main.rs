@@ -12,7 +12,7 @@ impl FromStr for Input {
     type Err = Box<dyn std::error::Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (alice, bob) = s.split_once(" ").ok_or("incorrect format")?;
+        let (alice, bob) = s.split_once(' ').ok_or("incorrect format")?;
         let (alice, bob) = (alice.parse::<i32>()?, bob.parse::<i32>()?);
 
         Ok(Self { alice, bob })

@@ -24,7 +24,7 @@ impl FromIterator<String> for Input {
         let mut iter = iter.into_iter();
 
         let header = iter.next().unwrap();
-        let mut header = header.split(" ");
+        let mut header = header.split(' ');
         let (n, m, b, t, c) = (
             header.next().unwrap().parse().unwrap(),
             header.next().unwrap().parse().unwrap(),
@@ -35,7 +35,7 @@ impl FromIterator<String> for Input {
 
         let connections = iter
             .map(|line| {
-                let mut line = line.split(" ");
+                let mut line = line.split(' ');
                 let (i, j, w) = (
                     line.next().unwrap().parse().unwrap(),
                     line.next().unwrap().parse().unwrap(),
