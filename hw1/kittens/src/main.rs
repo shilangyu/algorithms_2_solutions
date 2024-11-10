@@ -99,6 +99,22 @@ impl<const P: usize> Zp<P> {
 
         Self::new(if old_s < 0 { P as i64 + old_s } else { old_s } as _)
     }
+
+    fn pow(&self, mut exp: usize) -> Self {
+        let mut res = Self::new(1);
+        let mut base = *self;
+
+        while exp > 0 {
+            if exp % 2 == 1 {
+                res *= base;
+            }
+
+            base *= base;
+            exp /= 2;
+        }
+
+        res
+    }
 }
 
 /// Represents a square matrix over a Zp field.
@@ -600,6 +616,15 @@ mod tests {
             let c = Zp::<FIELD_ORDER>::new(2);
 
             assert_eq!(a / b, c);
+        }
+
+        #[test]
+        fn exponentiation() {
+            let a = Zp::<FIELD_ORDER>::new(123);
+            let b = Zp::<FIELD_ORDER>::new(3);
+
+            assert_eq!(a.pow(321), Zp::new(12023));
+            assert_eq!(b.pow(14), Zp::new(340));
         }
     }
 
