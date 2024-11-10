@@ -162,7 +162,7 @@ impl<const P: usize> Mul<Vec<Zp<P>>> for Matrix<P> {
         assert_eq!(self.size(), rhs.len());
 
         let n = self.size();
-        let mut res = vec![Zp::<P>::ZERO; n];
+        let mut res = vec![Zp::ZERO; n];
 
         for i in 0..n {
             for j in 0..n {
@@ -180,7 +180,7 @@ impl<const P: usize, const N: usize> From<[[usize; N]; N]> for Matrix<P> {
 
         for i in 0..N {
             for j in 0..N {
-                res[(i, j)] = Zp::<P>::new(data[i][j]);
+                res[(i, j)] = Zp::new(data[i][j]);
             }
         }
 
@@ -207,16 +207,14 @@ impl<const P: usize> IndexMut<(usize, usize)> for Matrix<P> {
 
 impl<const P: usize> Matrix<P> {
     fn new(size: usize) -> Self {
-        let data = vec![Zp::<P>::ZERO; size * size];
+        let data = vec![Zp::ZERO; size * size];
 
         Self { data, size }
     }
 
     fn new_uniform_random(size: usize) -> Self {
         let mut rand = random_numbers();
-        let data = (0..size * size)
-            .map(|_| Zp::<P>::new(rand() as _))
-            .collect();
+        let data = (0..size * size).map(|_| Zp::new(rand() as _)).collect();
 
         Self { data, size }
     }
@@ -233,7 +231,7 @@ impl<const P: usize> Matrix<P> {
 
         for i in 0..n {
             for k in i..n {
-                let mut sum = Zp::<P>::ZERO;
+                let mut sum = Zp::ZERO;
                 for j in 0..i {
                     sum += lower[(i, j)] * upper[(j, k)];
                 }
@@ -243,14 +241,14 @@ impl<const P: usize> Matrix<P> {
 
             for k in i..n {
                 if i == k {
-                    lower[(i, i)] = Zp::<P>::new(1);
+                    lower[(i, i)] = Zp::new(1);
                 } else {
-                    let mut sum = Zp::<P>::ZERO;
+                    let mut sum = Zp::ZERO;
                     for j in 0..i {
                         sum += lower[(k, j)] * upper[(j, i)];
                     }
 
-                    if upper[(i, i)] == Zp::<P>::ZERO {
+                    if upper[(i, i)] == Zp::ZERO {
                         return None;
                     }
 
@@ -262,13 +260,12 @@ impl<const P: usize> Matrix<P> {
         Some((lower, upper))
     }
 
-    // TODO: is this even correct?
     fn det(&self) -> Zp<P> {
         let Some((l, u)) = self.lu_decompose() else {
             return Zp::ZERO;
         };
 
-        let mut det = Zp::<P>::new(1);
+        let mut det = Zp::new(1);
         for i in 0..self.size() {
             det *= u[(i, i)];
             det *= l[(i, i)];
@@ -844,6 +841,12 @@ mod tests {
             let b: Vec<Zp<FIELD_ORDER>> = vec![Zp::new(5), Zp::new(7), Zp::new(8)];
 
             let _ = a * b;
+        }
+
+        #[test]
+        fn determinant() {
+            let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
+            assert_eq!(m.det(), Zp::new(36));
         }
     }
 
