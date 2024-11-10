@@ -396,8 +396,17 @@ impl Input {
             .collect::<HashMap<_, _>>();
 
         // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
-        let gammas = 1..=self.n * wmax + 1;
+        let gammas = (1..=self.n * wmax + 1).collect::<Vec<_>>();
 
+        let p = {
+            let mut p = Matrix::new(self.n * wmax + 1);
+            for i in 0..p.size() {
+                for j in 0..p.size() {
+                    p[(i, j)] = Zp::new(gammas[i]).pow(j);
+                }
+            }
+            p
+        };
         let r = gammas
             .into_iter()
             .map(|gamma| h_matrix_det(Zp::new(gamma), &alpha, &edge_set))
