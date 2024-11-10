@@ -225,7 +225,8 @@ impl<const P: usize> Matrix<P> {
         self.size
     }
 
-    fn lu_decompose(&self) -> (Self, Self) {
+    /// No decomposition if the matrix is not invertible.
+    fn lu_decompose(&self) -> Option<(Self, Self)> {
         let n = self.size();
         let mut lower = Self::new(n);
         let mut upper = Self::new(n);
@@ -249,17 +250,23 @@ impl<const P: usize> Matrix<P> {
                         sum += lower[(k, j)] * upper[(j, i)];
                     }
 
+                    if upper[(i, i)] == Zp::<P>::ZERO {
+                        return None;
+                    }
+
                     lower[(k, i)] = (self[(k, i)] - sum) / upper[(i, i)];
                 }
             }
         }
 
-        (lower, upper)
+        Some((lower, upper))
     }
 
     // TODO: is this even correct?
     fn det(&self) -> Zp<P> {
-        let (l, u) = self.lu_decompose();
+        let Some((l, u)) = self.lu_decompose() else {
+            return Zp::ZERO;
+        };
 
         let mut det = Zp::<P>::new(1);
         for i in 0..self.size() {
@@ -793,12 +800,12 @@ mod tests {
         #[test]
         fn lu_decompose() {
             let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
-            let (l, u) = m.lu_decompose();
+            let (l, u) = m.lu_decompose().unwrap();
 
             assert_eq!(l * u, m);
 
             let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
-            let (l, u) = m.lu_decompose();
+            let (l, u) = m.lu_decompose().unwrap();
 
             assert_eq!(l * u, m);
         }
