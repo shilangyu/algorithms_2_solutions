@@ -240,8 +240,6 @@ impl<const P: usize> Matrix<P> {
                 upper[(i, k)] = self[(i, k)] - sum;
             }
 
-            dbg!(&upper);
-
             for k in i..n {
                 if i == k {
                     lower[(i, i)] = Zp::<P>::new(1);
@@ -376,6 +374,69 @@ impl CountCombination {
     }
 }
 
+struct LinearEquationSystem<const P: usize> {
+    matrix: Matrix<P>,
+    rhs: Vec<Zp<P>>,
+}
+
+impl<const P: usize> LinearEquationSystem<P> {
+    fn new(matrix: Matrix<P>, rhs: Vec<Zp<P>>) -> Self {
+        assert_eq!(matrix.size(), rhs.len());
+        Self { matrix, rhs }
+    }
+
+    fn solve(self) -> Vec<Zp<P>> {
+        let Self {
+            mut matrix,
+            mut rhs,
+        } = self;
+        let n = matrix.size();
+
+        for i in 0..n - 1 {
+            for j in i..n - 1 {
+                reduce(&mut matrix, &mut rhs, i, j);
+            }
+        }
+
+        for i in (1..n).rev() {
+            eliminate(&mut matrix, &mut rhs, i);
+        }
+
+        let mut result = vec![Zp::ZERO; n];
+        for i in 0..n {
+            result[i] = rhs[i] / matrix[(i, i)];
+        }
+
+        return result;
+
+        fn reduce<const P: usize>(matrix: &mut Matrix<P>, rhs: &mut [Zp<P>], i: usize, j: usize) {
+            if matrix[(i, i)] == Zp::ZERO {
+                return;
+            }
+
+            let factor = matrix[(j + 1, i)] / matrix[(i, i)];
+            for k in i..matrix.size() {
+                matrix[(j + 1, k)] = matrix[(j + 1, k)] - factor * matrix[(i, k)];
+            }
+            rhs[j + 1] = rhs[j + 1] - factor * rhs[i];
+        }
+
+        fn eliminate<const P: usize>(matrix: &mut Matrix<P>, rhs: &mut [Zp<P>], i: usize) {
+            if matrix[(i, i)] == Zp::ZERO {
+                return;
+            }
+
+            for j in (1..=i).rev() {
+                let factor = matrix[(j - 1, i)] / matrix[(i, i)];
+                rhs[j - 1] = rhs[j - 1] - factor * rhs[i];
+                for k in (0..matrix.size()).rev() {
+                    matrix[(j - 1, k)] = matrix[(j - 1, k)] - factor * matrix[(i, k)];
+                }
+            }
+        }
+    }
+}
+
 impl Input {
     /// Solves the problem.
     fn solve(&self) -> bool {
@@ -438,7 +499,10 @@ impl Input {
             .map(|gamma| h_matrix_det(Zp::new(gamma), &alpha, &edge_set))
             .collect::<Vec<_>>();
 
-        todo!()
+        let c = LinearEquationSystem::new(p, r).solve();
+
+        // TODO: Should it be +1?
+        c[self.budget] != Zp::ZERO
     }
 }
 
@@ -739,7 +803,7 @@ mod tests {
             let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
             let b: Matrix<FIELD_ORDER> = Matrix::from([[5, 6, 8], [7, 8, 2], [0, 12, 9]]);
 
-            a * b;
+            let _ = a * b;
         }
 
         #[test]
@@ -757,7 +821,39 @@ mod tests {
             let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
             let b: Vec<Zp<FIELD_ORDER>> = vec![Zp::new(5), Zp::new(7), Zp::new(8)];
 
-            a * b;
+            let _ = a * b;
+        }
+    }
+
+    mod linear_equation_system {
+        use super::*;
+
+        #[test]
+        #[should_panic]
+        fn linear_equation_system_fails_for_different_sizes() {
+            let matrix: Matrix<FIELD_ORDER> = Matrix::from([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+            let rhs = vec![Zp::new(1), Zp::new(2)];
+
+            LinearEquationSystem::new(matrix, rhs);
+        }
+    }
+
+    mod input {
+        use super::*;
+
+        #[test]
+        fn solves_example_inputs() {
+            let input = get(EXAMPLE_1);
+            let result = input.solve() || input.solve() || input.solve() || input.solve();
+            assert!(result);
+
+            let input = get(EXAMPLE_2);
+            let result = input.solve() || input.solve() || input.solve() || input.solve();
+            assert!(!result);
+
+            let input = get(EXAMPLE_3);
+            let result = input.solve() || input.solve() || input.solve() || input.solve();
+            assert!(!result);
         }
     }
 }
