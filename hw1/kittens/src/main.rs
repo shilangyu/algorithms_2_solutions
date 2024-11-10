@@ -148,6 +148,25 @@ impl<const P: usize> Mul<Matrix<P>> for Matrix<P> {
     }
 }
 
+impl<const P: usize> Mul<Vec<Zp<P>>> for Matrix<P> {
+    type Output = Vec<Zp<P>>;
+
+    fn mul(self, rhs: Vec<Zp<P>>) -> Self::Output {
+        assert_eq!(self.size(), rhs.len());
+
+        let n = self.size();
+        let mut res = vec![Zp::<P>::ZERO; n];
+
+        for i in 0..n {
+            for j in 0..n {
+                res[i] += self[(i, j)] * rhs[j];
+            }
+        }
+
+        res
+    }
+}
+
 impl<const P: usize, const N: usize> From<[[usize; N]; N]> for Matrix<P> {
     fn from(data: [[usize; N]; N]) -> Self {
         let mut res = Self::new(N);
@@ -696,6 +715,42 @@ mod tests {
             let (l, u) = m.lu_decompose();
 
             assert_eq!(l * u, m);
+        }
+
+        #[test]
+        fn matrix_multiplication() {
+            let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
+            let b: Matrix<FIELD_ORDER> = Matrix::from([[5, 6], [7, 8]]);
+            let c: Matrix<FIELD_ORDER> = Matrix::from([[19, 22], [43, 50]]);
+
+            assert_eq!(a * b, c);
+        }
+
+        #[test]
+        #[should_panic]
+        fn matrix_multiplication_fails_for_different_size_matrices() {
+            let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
+            let b: Matrix<FIELD_ORDER> = Matrix::from([[5, 6, 8], [7, 8, 2], [0, 12, 9]]);
+
+            a * b;
+        }
+
+        #[test]
+        fn matrix_vector_multiplication() {
+            let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
+            let b: Vec<Zp<FIELD_ORDER>> = vec![Zp::new(5), Zp::new(7)];
+            let c: Vec<Zp<FIELD_ORDER>> = vec![Zp::new(19), Zp::new(43)];
+
+            assert_eq!(a * b, c);
+        }
+
+        #[test]
+        #[should_panic]
+        fn matrix_vector_multiplication_fails_for_different_sizes() {
+            let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
+            let b: Vec<Zp<FIELD_ORDER>> = vec![Zp::new(5), Zp::new(7), Zp::new(8)];
+
+            a * b;
         }
     }
 }
