@@ -1,71 +1,26 @@
-use std::{
-    io::{self, BufRead},
-    str::FromStr,
-};
+use std::io::{self, Read};
 
-struct Input {
-    alice: i32,
-    bob: i32,
-}
+fn main() {
+    let mut stdin = io::stdin().lock();
+    let mut buf = Vec::with_capacity(256);
+    let _ = stdin.read_to_end(&mut buf);
 
-impl FromStr for Input {
-    type Err = Box<dyn std::error::Error>;
+    let mut is_alice = true;
+    let mut alice = 0;
+    let mut bob = 0;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (alice, bob) = s.split_once(' ').ok_or("incorrect format")?;
-        let (alice, bob) = (alice.parse::<i32>()?, bob.parse::<i32>()?);
-
-        Ok(Self { alice, bob })
-    }
-}
-
-impl Input {
-    fn solve(&self) -> i32 {
-        self.alice + self.bob
-    }
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let stdin = io::stdin();
-    let mut iterator = stdin.lock().lines();
-    let line = iterator.next().unwrap()?;
-
-    let input = line.parse::<Input>()?;
-    let result = input.solve();
-
-    println!("{}", result);
-
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod parsing {
-        use super::*;
-
-        #[test]
-        fn correct_input() {
-            let input = "1 2".parse::<Input>().unwrap();
-            assert_eq!(input.alice, 1);
-            assert_eq!(input.bob, 2);
+    for d in buf.into_iter() {
+        if d > b'9' || d < b'0' {
+            is_alice = false;
+            continue;
         }
 
-        #[test]
-        fn incorrect_input() {
-            let input = "1".parse::<Input>();
-            assert!(input.is_err());
+        if is_alice {
+            alice = alice * 10 + (d - b'0') as i32;
+        } else {
+            bob = bob * 10 + (d - b'0') as i32;
         }
     }
 
-    mod solving {
-        use super::*;
-
-        #[test]
-        fn simple() {
-            let input = Input { alice: 1, bob: 2 };
-            assert_eq!(input.solve(), 3);
-        }
-    }
+    println!("{}", alice + bob);
 }
