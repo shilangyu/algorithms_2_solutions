@@ -12,9 +12,9 @@ struct Connection {
 #[derive(Debug, PartialEq)]
 struct Input {
     n: usize,
-    b: usize,
-    t: usize,
-    c: usize,
+    budget: usize,
+    train_cost: usize,
+    car_cost: usize,
     connections: Vec<Connection>,
 }
 
@@ -57,9 +57,9 @@ impl FromIterator<String> for Input {
 
         Self {
             n,
-            b,
-            t,
-            c,
+            budget: b,
+            train_cost: t,
+            car_cost: c,
             connections,
         }
     }
@@ -89,36 +89,145 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod tests {
     use super::*;
 
-    mod parsing {
-        use super::*;
+    const EXAMPLE_1: &str = "3 6 7 3 1
+0 0 1
+1 1 3
+2 2 1
+1 0 3
+0 2 3
+2 1 1
+";
+    const EXAMPLE_2: &str = "3 6 7 3 1
+0 0 3
+1 1 3
+2 2 3
+0 1 3
+1 2 1
+2 0 1
+";
+    const EXAMPLE_3: &str = "2 2 7 5 3
+0 0 3
+1 1 5
+";
 
-        #[test]
-        fn test_input() {
-            let input = Input {
+    #[test]
+    fn parses_example_inputs() {
+        let input = EXAMPLE_1
+            .lines()
+            .map(ToString::to_string)
+            .collect::<Input>();
+        assert_eq!(
+            input,
+            Input {
                 n: 3,
-                b: 1,
-                t: 1,
-                c: 2,
+                budget: 7,
+                train_cost: 3,
+                car_cost: 1,
                 connections: vec![
                     Connection {
                         volunteer: 0,
+                        city: 0,
+                        cost: 1
+                    },
+                    Connection {
+                        volunteer: 1,
                         city: 1,
-                        cost: 1,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 2,
+                        city: 2,
+                        cost: 1
+                    },
+                    Connection {
+                        volunteer: 1,
+                        city: 0,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 0,
+                        city: 2,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 2,
+                        city: 1,
+                        cost: 1
+                    },
+                ]
+            }
+        );
+
+        let input = EXAMPLE_2
+            .lines()
+            .map(ToString::to_string)
+            .collect::<Input>();
+        assert_eq!(
+            input,
+            Input {
+                n: 3,
+                budget: 7,
+                train_cost: 3,
+                car_cost: 1,
+                connections: vec![
+                    Connection {
+                        volunteer: 0,
+                        city: 0,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 1,
+                        city: 1,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 2,
+                        city: 2,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 0,
+                        city: 1,
+                        cost: 3
                     },
                     Connection {
                         volunteer: 1,
                         city: 2,
-                        cost: 2,
+                        cost: 1
                     },
-                ],
-            };
+                    Connection {
+                        volunteer: 2,
+                        city: 0,
+                        cost: 1
+                    },
+                ]
+            }
+        );
 
-            let input_str = "3 2 1 1 2\n0 1 1\n1 2 2\n"
-                .lines()
-                .map(|s| s.to_string())
-                .collect::<Input>();
-
-            assert_eq!(input, input_str);
-        }
+        let input = EXAMPLE_3
+            .lines()
+            .map(ToString::to_string)
+            .collect::<Input>();
+        assert_eq!(
+            input,
+            Input {
+                n: 2,
+                budget: 7,
+                train_cost: 5,
+                car_cost: 3,
+                connections: vec![
+                    Connection {
+                        volunteer: 0,
+                        city: 0,
+                        cost: 3
+                    },
+                    Connection {
+                        volunteer: 1,
+                        city: 1,
+                        cost: 5
+                    },
+                ]
+            },
+        );
     }
 }
