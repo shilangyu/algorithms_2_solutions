@@ -352,8 +352,8 @@ impl CountCombination {
 
 impl Input {
     /// Solves the problem.
-    fn solve(self) -> bool {
-        let Some(_) = CountCombination::new(&self) else {
+    fn solve(&self) -> bool {
+        let Some(_) = CountCombination::new(self) else {
             return false;
         };
 
@@ -386,7 +386,7 @@ impl Input {
 
         let edge_set = self
             .connections
-            .into_iter()
+            .iter()
             .flat_map(|c| {
                 [
                     ((c.volunteer, c.city), c.cost),
