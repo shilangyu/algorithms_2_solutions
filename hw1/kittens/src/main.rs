@@ -512,9 +512,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let input = iterator.into_iter().collect::<Input>();
 
-    let result = input.solve();
+    // run k times so that chance of failure is 0.1%
+    let k = 0.001f64.log(1f64 / input.n as f64) as usize + 1;
 
-    println!("{}", if result { "yes" } else { "no" });
+    for _ in 0..k {
+        if input.solve() {
+            println!("yes");
+            return Ok(());
+        }
+    }
+
+    println!("no");
 
     Ok(())
 }
