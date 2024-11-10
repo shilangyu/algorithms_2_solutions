@@ -438,8 +438,21 @@ impl<const P: usize> LinearEquationSystem<P> {
 }
 
 impl Input {
-    /// Solves the problem.
     fn solve(&self) -> bool {
+        // run k times so that chance of failure is 0.1%
+        let k = 0.001f64.log(1f64 / self.n as f64) as usize + 1;
+
+        for _ in 0..k {
+            if self.solve_once() {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Solves the problem.
+    fn solve_once(&self) -> bool {
         let Some(_) = CountCombination::new(self) else {
             return false;
         };
@@ -512,17 +525,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let input = iterator.into_iter().collect::<Input>();
 
-    // run k times so that chance of failure is 0.1%
-    let k = 0.001f64.log(1f64 / input.n as f64) as usize + 1;
-
-    for _ in 0..k {
-        if input.solve() {
-            println!("yes");
-            return Ok(());
-        }
+    if input.solve() {
+        println!("yes");
+    } else {
+        println!("no")
     }
-
-    println!("no");
 
     Ok(())
 }
