@@ -8,17 +8,17 @@ use std::{
 
 /// Rust std has no random generators. This is based on:
 /// https://github.com/rust-lang/rust/blob/1.55.0/library/core/src/slice/sort.rs#L559-L573
-fn random_numbers() -> impl Iterator<Item = u32> {
+fn random_numbers() -> impl FnMut() -> u32 {
     use std::collections::hash_map::RandomState;
     use std::hash::{BuildHasher, Hasher};
 
     let mut random = RandomState::new().build_hasher().finish() as u32;
-    std::iter::repeat_with(move || {
+    move || {
         random ^= random << 13;
         random ^= random >> 17;
         random ^= random << 5;
         random
-    })
+    }
 }
 
 /// A prime number used for Zp arithmetic. Number chosen to be big enough to handle the problem.
@@ -213,9 +213,9 @@ impl<const P: usize> Matrix<P> {
     }
 
     fn new_uniform_random(size: usize) -> Self {
-        let data = random_numbers()
-            .take(size * size)
-            .map(|n| Zp::<P>::new(n as _))
+        let mut rand = random_numbers();
+        let data = (0..size * size)
+            .map(|_| Zp::<P>::new(rand() as _))
             .collect();
 
         Self { data, size }
