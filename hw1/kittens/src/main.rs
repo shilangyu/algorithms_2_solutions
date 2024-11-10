@@ -1,6 +1,7 @@
 use std::{
     cmp::max,
     collections::HashMap,
+    fmt::Debug,
     io::{self, BufRead},
     ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub},
 };
@@ -24,8 +25,14 @@ fn random_numbers() -> impl Iterator<Item = u32> {
 const FIELD_ORDER: usize = 20011;
 
 /// Represents an element of the field Z/pZ for a prime number `P`.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 struct Zp<const P: usize>(usize);
+
+impl<const P: usize> Debug for Zp<P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Zp<{}>({})", P, self.0)
+    }
+}
 
 impl<const P: usize> Add<Self> for Zp<P> {
     type Output = Self;
