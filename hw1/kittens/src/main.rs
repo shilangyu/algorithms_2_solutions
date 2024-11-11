@@ -1,3 +1,5 @@
+#![allow(clippy::needless_range_loop)]
+
 use std::{
     cmp::max,
     collections::HashMap,
@@ -260,6 +262,8 @@ impl<const P: usize> Matrix<P> {
         Some((lower, upper))
     }
 
+    // FIXME: this fails too often. Namely, LU decomposition fails when a determinant exists. Use a different method for computing determinant.
+    // For example use LUP decomposition.
     fn det(&self) -> Zp<P> {
         let Some((l, u)) = self.lu_decompose() else {
             return Zp::ZERO;
@@ -801,7 +805,7 @@ mod tests {
 
             assert_eq!(l * u, m);
 
-            let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
+            let m: Matrix<FIELD_ORDER> = Matrix::from([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
             let (l, u) = m.lu_decompose().unwrap();
 
             assert_eq!(l * u, m);
@@ -847,6 +851,9 @@ mod tests {
         fn determinant() {
             let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
             assert_eq!(m.det(), Zp::new(36));
+
+            let m: Matrix<FIELD_ORDER> = Matrix::from([[0, 5108, 0], [0, 0, 4018], [6655, 0, 0]]);
+            assert_eq!(m.det(), Zp::new(5852));
         }
     }
 
@@ -879,6 +886,53 @@ mod tests {
             let input = get(EXAMPLE_3);
             let result = input.solve() || input.solve() || input.solve() || input.solve();
             assert!(!result);
+        }
+
+        fn shuffle<T>(vec: &mut [T]) {
+            let mut rand = random_numbers();
+            let n = vec.len();
+            for i in 0..(n - 1) {
+                let j = (rand() as usize) % (n - i) + i;
+                vec.swap(i, j);
+            }
+        }
+
+        #[test]
+        fn solves_big_input() {
+            let mut rand_int = random_numbers();
+
+            let n = 100;
+            let t = rand_int() as usize % 201;
+            let c = rand_int() as usize % t;
+
+            let mut cities = (0..n).collect::<Vec<_>>();
+            shuffle(&mut cities);
+
+            // construct perfect matching
+            let mut budget = 0;
+            let mut connections = vec![];
+            for i in 0..n {
+                let cost = if rand_int() % 2 == 0 { t } else { c };
+                budget += cost;
+
+                connections.push(Connection {
+                    volunteer: i,
+                    city: cities[i],
+                    cost,
+                });
+            }
+
+            let input = Input {
+                n,
+                budget,
+                train_cost: t,
+                car_cost: c,
+                connections,
+            };
+
+            let result = input.solve();
+
+            assert!(result);
         }
     }
 }
