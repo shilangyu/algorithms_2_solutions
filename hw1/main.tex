@@ -1,0 +1,98 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{verbatim}
+
+\title{Homework 1}
+\author{
+    Jonathan Arnoult \\ jonathan.arnoult@epfl.ch
+    \and Emilien Ganier \\ emilien.ganier@epfl.ch
+    \and Marcin Wojnarowski \\ marcin.wojnarowski@epfl.ch
+}
+
+\newtheorem{claim}{Claim}
+
+\date{November 22, 2024}
+\begin{document}
+
+\maketitle
+
+\section{Problem 1}
+
+\section{Problem 2}
+
+\subsubsection*{Algorithm}
+
+We consider the following algorithm:
+
+\begin{itemize}
+    \item Assign each edge $e$ a weight $w_e^{(1)}$ initialized to 1.
+\end{itemize}
+At time $t$: % TODO: define T
+\begin{itemize}
+    \item Pick the distribution $p_e^{(t)} = \frac{w_e^{(t)}}{\Phi^{(t)}}$ where $\Phi^{(t)} = \sum_{e} w_e^{(t)}$.
+    \item Solve the reduced LP problem using an oracle (see below).
+    \item Define the cost of constraint $e$ as:
+        $$\boxed{m_e^{(t)} = 1 - \sum_{p\in\mathcal{P} : e \in p} f_p^{(t)}}$$
+        We note that the cost is positive when the constraint is satisfied.
+    \item Update the weights with $w_e^{(t+1)} = w_e^{(t)} e^{-\epsilon m_e^{(t)}}$.
+\end{itemize}
+
+Output : the average $\bar{f} = \frac{1}{T}\sum_{t = 1}^{T}f_p^{(t)}$.
+
+\subsubsection*{Reduced LP Problem}
+
+At a given time $t$, the reduced LP problem is:
+$$\text{maximize } \sum_{p \in \mathcal{P}} f_p^{(t)}$$
+$$\text{s.t. } \sum_{p \in \mathcal{P}} \left(\sum_{e \in p} p_e^{(t)}\right)f_p^{(t)} \le 1$$
+$$\forall p \in P, f_p^{(t)} \ge 0$$
+
+The reduced LP problem amounts exactly to finding a \underline{shortest path} $p^*$ between $s$ and $t$ in the same graph with weights on edges given by $(p_e^{(t)})_{e\in E}$.
+
+Indeed, an optimal solution to the LP problem is given by $f_{p^*}^{(t)} = 1/(\sum_{e \in p^*}p_e^{(t)})$ and $f_p^{(t)} = 0$ for $p \neq p^*$, where $p^*$ is a shortest path. The $p_e^{(t)}$ are all positive so this \fbox{reduced problem can be solved in $O(n^2)$} (using Dijkstra's algorithm).
+
+\subsubsection*{Bound on cost vectors}
+
+Let us establish the bound on the cost vectors. Let $t$. By positivity of $f_p^{(t)}$ for all $p$, $m_e^{(t)} \le 1$. On the other hand, consider $p^*$ a shortest path at time $t$. Then, since $\sum_{e \in p^*}p_e^{(t)} \le 1$, we have:
+$$m_e^{(t)} = 1 - \frac{1}{\sum_{e \in p^*}p_e^{(t)}} \ge 0$$
+
+
+
+\subsubsection*{First requirement}
+
+By the corollary to the Hedge algorithm analysis, if we run the Hedge algorithm on these cost vectors in time $T = O(\rho^2\ln{|E|}/\epsilon^2)$ we get that for each edge $e$:
+$$\frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}m_e^{(t)} \leq \frac{1}{T}\sum_{t=1}^{T}m_e{(t)}+2\epsilon$$
+
+The left-hand side is precisely:
+$$
+\frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}m_e^{(t)}
+    = \frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}\left(1 - \sum_{p\in\mathcal{P} : e \in p}f_p^{(t)}\right) \\
+    = \frac{1}{T}\sum_{t = 1}^{T}\underbrace{1 - \sum_{p \in \mathcal{P}} \left(\sum_{e \in p} p_e^{(t)}\right)f_p^{(t)}}_{\ge 0\text{ , by feasibility of } f_p^{(t)}}$$
+
+Whence the positivity of the left-hand side, and therefore the positivity of the right-hand side. Consequently:
+
+$$-2\epsilon \le \frac{1}{T}\sum_{t = 1}^{T}m_e^{(t)} = 1 - \frac{1}{T}\sum_{t=1}^{T}\sum_{p \in \mathcal{P} : e \in p}f_p^{(t)} = 1 - \sum_{p \in \mathcal{P}:e \in p}\bar{f_p}$$
+
+So for all $e \in E$, \fbox{$\sum_{p:e \in p}\bar{f_p} \le 1 + 2\epsilon$}.
+
+\subsubsection*{Second requirement}
+
+Let $f_p^*$ be an optimal solution to the max-flow LP. Then it is a solution to the reduced LP problem for all $t$ since $\sum_{e \in p} p_e^{(t)} \le 1$ and $f_p^* \ge 0$ for all $p$, which implies that:
+$$\sum_{p\in \mathcal{P}:e\in p}\left(\sum_{e \in p} p_e^{(t)}\right)f_p^* \le \sum_{p \in \mathcal{P} : e\in p} f_p^* \le 1$$
+
+So, by maximality of $(f_p^{(t)})_p$ for the reduced LP problem,
+$$\sum_{p \in \mathcal{P}}f_p^{(t)} \ge OPT$$
+
+By averaging the preceding result over $t$:
+$$\boxed{\sum_{p \in \mathcal{P}}\bar{f_p} \ge OPT}$$
+
+\subsubsection*{Runtime}
+
+We remark that $\rho = poly(n)$ and $|E|=poly(n)$ so $T = O(\rho^2\ln{|E|}/\epsilon^2) = O(poly(n)/\epsilon^2)$. So our algorithm runs in time \fbox{$poly(n)/\epsilon^2$}.
+
+\end{document}
