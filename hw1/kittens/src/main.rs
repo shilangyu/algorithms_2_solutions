@@ -1,11 +1,15 @@
 #![allow(clippy::needless_range_loop)]
 
+/// Solution by team:
+/// - Marcin Wojnarowski (376886)
+/// - Jonathan Arnoult (369910)
+/// - Emilien Ganier (369941)
 use std::{
     cmp::max,
     collections::HashMap,
     fmt::Debug,
     io::{self, BufRead},
-    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub},
+    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
 };
 
 /// Rust std has no random generators. This is based on:
@@ -27,7 +31,7 @@ fn random_numbers() -> impl FnMut() -> u32 {
 const FIELD_ORDER: usize = 20011;
 
 /// Represents an element of the field Z/pZ for a prime number `P`.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
 struct Zp<const P: usize>(usize);
 
 impl<const P: usize> Debug for Zp<P> {
@@ -81,6 +85,12 @@ impl<const P: usize> MulAssign<Self> for Zp<P> {
     }
 }
 
+impl<const P: usize> SubAssign<Self> for Zp<P> {
+    fn sub_assign(&mut self, rhs: Zp<P>) {
+        *self = *self - rhs;
+    }
+}
+
 impl<const P: usize> Zp<P> {
     const ZERO: Self = Self::new(0);
 
@@ -129,7 +139,7 @@ impl<const P: usize> Zp<P> {
 
 /// Represents a square matrix over a Zp field.
 /// Row-major indexing.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Matrix<const P: usize> {
     data: Vec<Zp<P>>,
     // Invariant: size * size == data.len()
@@ -221,59 +231,78 @@ impl<const P: usize> Matrix<P> {
         Self { data, size }
     }
 
+    fn new_identity(size: usize) -> Self {
+        let mut res = Self::new(size);
+
+        for i in 0..size {
+            res[(i, i)] = Zp::new(1);
+        }
+
+        res
+    }
+
     const fn size(&self) -> usize {
         self.size
     }
 
+    fn swap_rows(&mut self, i: usize, j: usize) {
+        self.data.swap(i, j);
+    }
+
     /// No decomposition if the matrix is not invertible.
-    fn lu_decompose(&self) -> Option<(Self, Self)> {
+    fn lup_decompose(&self) -> Option<(Self, Self, usize)> {
         let n = self.size();
-        let mut lower = Self::new(n);
-        let mut upper = Self::new(n);
+        let mut p = Self::new_identity(n);
+        let mut lu = self.clone();
+        let mut swaps = 0;
 
-        for i in 0..n {
-            for k in i..n {
-                let mut sum = Zp::ZERO;
-                for j in 0..i {
-                    sum += lower[(i, j)] * upper[(j, k)];
+        for i in 0..n - 1 {
+            let mut max_pivot = i;
+            for k in i + 1..n {
+                if lu[(k, i)] > lu[(i, i)] {
+                    max_pivot = k;
                 }
-
-                upper[(i, k)] = self[(i, k)] - sum;
             }
 
-            for k in i..n {
-                if i == k {
-                    lower[(i, i)] = Zp::new(1);
-                } else {
-                    let mut sum = Zp::ZERO;
-                    for j in 0..i {
-                        sum += lower[(k, j)] * upper[(j, i)];
-                    }
+            if lu[(max_pivot, i)] == Zp::ZERO {
+                return None;
+            }
 
-                    if upper[(i, i)] == Zp::ZERO {
-                        return None;
-                    }
+            if max_pivot != i {
+                swaps += 1;
+                p.swap_rows(max_pivot, i);
 
-                    lower[(k, i)] = (self[(k, i)] - sum) / upper[(i, i)];
+                for k in i..n {
+                    (lu[(i, k)], lu[(max_pivot, k)]) = (lu[(max_pivot, k)], lu[(i, k)]);
+                }
+            }
+
+            for k in i + 1..n {
+                lu[(k, i)] = lu[(k, i)] / lu[(i, i)];
+
+                for j in i + 1..n {
+                    lu[(k, j)] = lu[(k, j)] - lu[(i, j)] * lu[(k, i)];
                 }
             }
         }
 
-        Some((lower, upper))
+        Some((lu, p, swaps))
     }
 
-    // FIXME: this fails too often. Namely, LU decomposition fails when a determinant exists. Use a different method for computing determinant.
-    // For example use LUP decomposition.
     fn det(&self) -> Zp<P> {
-        let Some((l, u)) = self.lu_decompose() else {
+        let Some((lu, _, swaps)) = self.lup_decompose() else {
             return Zp::ZERO;
         };
 
         let mut det = Zp::new(1);
         for i in 0..self.size() {
-            det *= u[(i, i)];
-            det *= l[(i, i)];
+            det *= lu[(i, i)];
         }
+        det *= if swaps % 2 == 0 {
+            Zp::new(1)
+        } else {
+            Zp::new(P - 1)
+        };
 
         det
     }
@@ -426,7 +455,7 @@ impl<const P: usize> LinearEquationSystem<P> {
             for k in i..matrix.size() {
                 matrix[(j + 1, k)] = matrix[(j + 1, k)] - factor * matrix[(i, k)];
             }
-            rhs[j + 1] = rhs[j + 1] - factor * rhs[i];
+            rhs[j + 1] -= factor * rhs[i];
         }
 
         fn eliminate<const P: usize>(matrix: &mut Matrix<P>, rhs: &mut [Zp<P>], i: usize) {
@@ -436,7 +465,7 @@ impl<const P: usize> LinearEquationSystem<P> {
 
             for j in (1..=i).rev() {
                 let factor = matrix[(j - 1, i)] / matrix[(i, i)];
-                rhs[j - 1] = rhs[j - 1] - factor * rhs[i];
+                rhs[j - 1] -= factor * rhs[i];
                 for k in (0..matrix.size()).rev() {
                     matrix[(j - 1, k)] = matrix[(j - 1, k)] - factor * matrix[(i, k)];
                 }
@@ -505,7 +534,7 @@ impl Input {
             })
             .collect::<HashMap<_, _>>();
 
-        // TODO: is gamma allowed to be zero? At some point we are doing gamma^0, that would be undefined for gamma=0
+        assert!(self.n * wmax + 1 < FIELD_ORDER);
         let gammas = (1..=self.n * wmax + 1).map(Zp::new).collect::<Vec<_>>();
 
         let p = {
@@ -524,7 +553,6 @@ impl Input {
 
         let c = LinearEquationSystem::new(p, r).solve();
 
-        // TODO: Should it be +1?
         c[count_combination.train_count] != Zp::ZERO
     }
 }
@@ -799,19 +827,6 @@ mod tests {
         }
 
         #[test]
-        fn lu_decompose() {
-            let m: Matrix<FIELD_ORDER> = Matrix::from([[6, 18, 3], [2, 12, 1], [4, 15, 3]]);
-            let (l, u) = m.lu_decompose().unwrap();
-
-            assert_eq!(l * u, m);
-
-            let m: Matrix<FIELD_ORDER> = Matrix::from([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
-            let (l, u) = m.lu_decompose().unwrap();
-
-            assert_eq!(l * u, m);
-        }
-
-        #[test]
         fn matrix_multiplication() {
             let a: Matrix<FIELD_ORDER> = Matrix::from([[1, 2], [3, 4]]);
             let b: Matrix<FIELD_ORDER> = Matrix::from([[5, 6], [7, 8]]);
@@ -876,15 +891,15 @@ mod tests {
         #[test]
         fn solves_example_inputs() {
             let input = get(EXAMPLE_1);
-            let result = input.solve() || input.solve() || input.solve() || input.solve();
+            let result = input.solve();
             assert!(result);
 
             let input = get(EXAMPLE_2);
-            let result = input.solve() || input.solve() || input.solve() || input.solve();
+            let result = input.solve();
             assert!(!result);
 
             let input = get(EXAMPLE_3);
-            let result = input.solve() || input.solve() || input.solve() || input.solve();
+            let result = input.solve();
             assert!(!result);
         }
 
