@@ -28,6 +28,11 @@ jobs:
           cargo clippy --version
           cargo fmt --version
 
+      - name: Prepare build
+        run: |
+          mkdir build
+          echo '<ul><li><a href="./solutions1.pdf">solutions 1</a></li></ul>' > build/index.html
+
       - name: Check homework 1 example code
         working-directory: hw1/apples
         run: |
@@ -43,3 +48,36 @@ jobs:
           cargo fmt --check --verbose
           cargo test --verbose
           cargo build --verbose
+
+      - name: Generate homework 1 solutions
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: hw1
+          root_file: main.tex
+
+      - name: Move solutions
+        run: |
+          mv hw1/main.pdf build/solutions1.pdf
+
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'build/'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
