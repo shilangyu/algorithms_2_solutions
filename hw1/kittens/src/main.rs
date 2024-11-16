@@ -6,7 +6,6 @@
 /// - Emilien Ganier (369941)
 use std::{
     cmp::max,
-    collections::HashMap,
     fmt::Debug,
     io::{self, BufRead},
     ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
@@ -308,6 +307,26 @@ impl<const P: usize> Matrix<P> {
     }
 }
 
+struct EdgeSet {
+    edges: Vec<Option<usize>>,
+    n: usize,
+}
+
+impl EdgeSet {
+    fn new(connections: impl Iterator<Item = Connection>, n: usize) -> Self {
+        let mut edges = vec![None; n * n];
+        for c in connections {
+            edges[c.volunteer * n + c.city] = Some(c.cost);
+        }
+
+        Self { edges, n }
+    }
+
+    fn get_cost(&self, volunteer: usize, city: usize) -> Option<usize> {
+        self.edges[volunteer * self.n + city]
+    }
+}
+
 /// Represents a connection preference of a volunteer to a city and its cost.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Connection {
@@ -324,6 +343,41 @@ struct Input {
     train_cost: usize,
     car_cost: usize,
     connections: Vec<Connection>,
+}
+
+/// Input that has been preprocessed for the algorithm.
+struct PreparedInput {
+    n: usize,
+    budget: usize,
+    edge_set: EdgeSet,
+    wmax: usize,
+}
+
+impl TryFrom<&Input> for PreparedInput {
+    type Error = ();
+
+    fn try_from(value: &Input) -> Result<Self, Self::Error> {
+        let Some(count_combination) = CountCombination::new(value) else {
+            return Err(());
+        };
+
+        // We rescale weights: set train_cost to 1 and car_cost to 0
+        // this preserves the count combination. Budget is now equal to train_count.
+        let edge_set = EdgeSet::new(
+            value.connections.iter().map(|c| Connection {
+                cost: if c.cost == value.train_cost { 1 } else { 0 },
+                ..*c
+            }),
+            value.n,
+        );
+
+        Ok(Self {
+            n: value.n,
+            budget: count_combination.train_count,
+            edge_set,
+            wmax: 1,
+        })
+    }
 }
 
 impl FromIterator<String> for Input {
@@ -476,44 +530,41 @@ impl<const P: usize> LinearEquationSystem<P> {
 
 impl Input {
     fn solve(&self) -> bool {
+        let Ok(prepared_input) = PreparedInput::try_from(self) else {
+            return false;
+        };
+
         // run k times so that chance of failure is 0.1%
         let k = 0.001f64.log(1f64 / self.n as f64) as usize + 1;
 
         for _ in 0..k {
-            if self.solve_once() {
+            if prepared_input.solve() {
                 return true;
             }
         }
 
         false
     }
+}
 
+impl PreparedInput {
     /// Solves the problem.
-    fn solve_once(&self) -> bool {
-        let Some(count_combination) = CountCombination::new(self) else {
-            return false;
-        };
-
-        // We rescale weights: set train_cost to 1 and car_cost to 0
-        // this preserves the count combination. Budget is now equal to train_count.
-
-        let wmax = 1;
-
+    fn solve(&self) -> bool {
         // check if field order is big enough
-        assert!(FIELD_ORDER >= max(wmax * self.n + 1, self.n * self.n));
+        assert!(FIELD_ORDER >= max(self.wmax * self.n + 1, self.n * self.n));
 
         let alpha = Matrix::new_uniform_random(self.n);
 
         fn h_matrix_det(
             y: Zp<FIELD_ORDER>,
             x: &Matrix<FIELD_ORDER>,
-            edge_set: &HashMap<(usize, usize), usize>,
+            edge_set: &EdgeSet,
         ) -> Zp<FIELD_ORDER> {
             let mut h = Matrix::new(x.size());
             for i in 0..h.size() {
                 for j in 0..h.size() {
-                    h[(i, j)] = if let Some(cost) = edge_set.get(&(i, j)) {
-                        y.pow(*cost) * x[(i, j)]
+                    h[(i, j)] = if let Some(cost) = edge_set.get_cost(i, j) {
+                        y.pow(cost) * x[(i, j)]
                     } else {
                         Zp::ZERO
                     };
@@ -523,22 +574,13 @@ impl Input {
             h.det()
         }
 
-        let edge_set = self
-            .connections
-            .iter()
-            .map(|c| {
-                (
-                    (c.volunteer, c.city),
-                    if c.cost == self.train_cost { 1 } else { 0 },
-                )
-            })
-            .collect::<HashMap<_, _>>();
-
-        assert!(self.n * wmax + 1 < FIELD_ORDER);
-        let gammas = (1..=self.n * wmax + 1).map(Zp::new).collect::<Vec<_>>();
+        assert!(self.n * self.wmax + 1 < FIELD_ORDER);
+        let gammas = (1..=self.n * self.wmax + 1)
+            .map(Zp::new)
+            .collect::<Vec<_>>();
 
         let p = {
-            let mut p = Matrix::new(self.n * wmax + 1);
+            let mut p = Matrix::new(self.n * self.wmax + 1);
             for i in 0..p.size() {
                 for j in 0..p.size() {
                     p[(i, j)] = gammas[i].pow(j);
@@ -548,12 +590,12 @@ impl Input {
         };
         let r = gammas
             .into_iter()
-            .map(|gamma| h_matrix_det(gamma, &alpha, &edge_set))
+            .map(|gamma| h_matrix_det(gamma, &alpha, &self.edge_set))
             .collect::<Vec<_>>();
 
         let c = LinearEquationSystem::new(p, r).solve();
 
-        c[count_combination.train_count] != Zp::ZERO
+        c[self.budget] != Zp::ZERO
     }
 }
 
