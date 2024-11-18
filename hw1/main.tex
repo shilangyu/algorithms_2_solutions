@@ -1,5 +1,6 @@
 \documentclass[a4paper, 11pt]{article}
 \usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry} 
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -7,6 +8,7 @@
 \usepackage{amsthm}
 \usepackage{enumitem}
 \usepackage{verbatim}
+\usepackage{soul}
 
 \title{Homework 1}
 \author{
@@ -22,9 +24,60 @@
 
 \maketitle
 
-\section{Problem 1}
+\section*{Problem 1}
 
-\section{Problem 2}
+\subsection*{a}
+We start by explaining what do the variables refer to. For all $i\leq n$, $y_i=1$ if attraction $x_i$ is visited and $y_i=0$ otherwise. For all $j\leq m$, $z_j=1$ if traveler $j$ is happy and $z_j=0$ otherwise. Each constraint ensures that the values of $y_i$ and $z_j$ are coherent with the definition of happiness.\\\\
+We can first make sure that $\sum^m_{j=1} w_jz_j$ corresponds to the revenue of the travel guide. This is true since it exactly includes each happy traveler (i.e. those who come and pay) and add their respective contribution $w_j$, while ignoring unhappy travelers for who $z_j=0$.\\\\
+Now we must check if any feasible solution is indeed an itinerary, i.e. if the constraints are properly defined. If $z_j=0$, then we have nothing to check since traveler $T_j$ doesn't come. If $z_j=1$, as $y_i\geq 0$ and $1-y_i\geq 0$ and the problem is integral, there must be at least one $x_i\in V_j$ such that $y_i=1$, or one $x_i\in N_j$ such that $y_i=0$. The first case means a desired attraction is in the itinerary and the traveler will be happy, the second case means a hated attraction is not visited, and the traveler is also happy. In both case the traveler is indeed happy.\\\\
+Finally, we need to check that any itinerary satisfies the constraints (and in particular a maximizing itinerary). Let's consider an itinerary and defined $y_i$ and $z_j$ accordingly. If $z_j=0$, then constraint $j$ is satisfied since $y_i\geq 0$ and $1-y_i\geq 0$. If $z_j=1$, then it means the traveler is happy and either a desired attraction is visited or a hated attraction is not. In the first case we have $x_i\in V_j$ such that $y_j=1$ and the constraint is satisfied. In the second case we have $x_i\in N_j$ such that $y_j=0$ and $1-y_j=1$ and the constraint is satisfied. Therefore, the constraints are all satisfied.\\\\
+Hence, the integral program finds an itinerary maximizing the revenue.
+
+\subsection*{b}
+\subsubsection*{(i)}
+We write $Pr(T_j\text{ not happy})$ the probability that traveler $T_j$ is unhappy. We have
+\begin{align}
+\begin{split}
+    Pr(T_j\text{ not happy}) ={}&Pr(\text{all desired attractions are not visited)}\times\\
+    & Pr(\text{all hated attractions are visited})
+\end{split}\\
+\begin{split}
+    ={}&\prod_{x_i\in V_j}Pr(\text{attraction } x_i \text{ not visited)}\times\\
+    & \prod_{x_i\in N_j}Pr(\text{attraction } x_i \text{ visited})
+\end{split}\\
+    ={}& \prod_{x_i\in V_j}(1-y_i^*) \prod_{x_i\in N_j}y_i^*\\
+    ={}& \prod_{x_i\in V_j\sqcup N_j} a_i
+\end{align}
+where $a_i=1-y_i^*$ if $x_i\in V_j$ and $a_i=y_i^*$ if $x_i\in N_j$. Here we assume that $V_j$ and $N_j$ are disjoints as it seems reasonable, but this is technically not required for the final inequality.\\\\
+Since $a_i\geq 0$, with AM-GM inequality we obtain
+\begin{align}
+    Pr(T_j\text{ not happy}) \leq{}&\frac{1}{l_j^{l_j}}\left(\sum_{x_i\in V_j\sqcup N_j} a_i\right)^{l_j}\\
+    ={}&\frac{1}{l_j^{l_j}}\left(\sum_{x_i\in V_j} (1-y_i^*)+\sum_{x_i\in N_j} y_i^*\right)^{l_j}\\
+    ={}&\frac{1}{l_j^{l_j}}\left(\lvert V_j\rvert-\sum_{x_i\in V_j} y_i^*-\sum_{x_i\in N_j} (1-y_i^*)+\lvert N_j\rvert\right)^{l_j}\\
+    \leq{}&\frac{1}{l_j^{l_j}}\left(l_j-z_j^*\right)^{l_j}\\
+    ={}&\left(1-\frac{z_j^*}{l_j}\right)^{l_j}
+\end{align}
+
+For $(8)$, we use the constraints inequalities.
+
+\subsubsection*{(ii)}
+We bound the expected profit
+\begin{align}
+    E (\text{profit}) ={}&\sum_{j=1}^m w_j Pr(T_j\text{ happy})\\
+    ={}&\sum_{j=1}^m w_j (1-Pr(T_j\text{ not happy}))\\
+    \geq{}& \sum_{j=1}^m w_j \left(1-\left(1-\frac{z_j^*}{l_j}\right)^{l_j}\right)\\
+    \geq{}& \sum_{j=1}^m w_j \left(1-\left(1-\frac{1}{l_j}\right)^{l_j}\right)z_j^*\\
+    \geq{}& \sum_{j=1}^m w_j \left(1-\frac{1}{e}\right)z_j^*\\
+    ={}& \left(1-\frac{1}{e}\right)\sum_{j=1}^m w_j z_j^*\\
+    ={}& \left(1-\frac{1}{e}\right)OPT_{LP}\\
+    \geq{}& \left(1-\frac{1}{e}\right)OPT_{INTEGRAL}
+\end{align}
+which concludes. For $(12)$, we use the fact that all $w_j$ are non negative and the previous question. For $(13)$ and $(14)$ we use the suggested inequalities. For $(17)$ we use the fact that the profit of the LP relaxation is always equal or greater than the profit of the integral problem, and $\left(1-\frac{1}{e}\right)>0$.\\\\
+Therefore, we have a $\left(1-\frac{1}{e}\right)$-approximation.
+
+\newpage
+
+\section*{Problem 2}
 
 \subsubsection*{Algorithm}
 
@@ -48,25 +101,27 @@ Output : the average $\bar{f} = \frac{1}{T}\sum_{t = 1}^{T}f_p^{(t)}$.
 \subsubsection*{Reduced LP Problem}
 
 At a given time $t$, the reduced LP problem is:
-$$\text{maximize } \sum_{p \in \mathcal{P}} f_p^{(t)}$$
-$$\text{s.t. } \sum_{p \in \mathcal{P}} \left(\sum_{e \in p} p_e^{(t)}\right)f_p^{(t)} \le 1$$
-$$\forall p \in P, f_p^{(t)} \ge 0$$
+\begin{align*}
+    \text{maximize }&\sum_{p \in \mathcal{P}} f_p^{(t)} \\
+    \text{s.t. }&\sum_{p \in \mathcal{P}} \left(\sum_{e \in p} p_e^{(t)}\right)f_p^{(t)} \le 1 \qquad
+\forall p \in P, f_p^{(t)} \ge 0 \\
+    &\sum_{p \in \mathcal{P}}f_p^{(t)} \le n^2
+\end{align*}
+The reduced LP problem amounts exactly to finding a \ul{shortest path} $p^*$ between $s$ and $t$ of length greater or equal to $\frac{1}{n^2}$ in the same graph with weights on edges given by $(p_e^{(t)})_{e\in E}$.
 
-The reduced LP problem amounts exactly to finding a \underline{shortest path} $p^*$ between $s$ and $t$ in the same graph with weights on edges given by $(p_e^{(t)})_{e\in E}$.
-
-Indeed, an optimal solution to the LP problem is given by $f_{p^*}^{(t)} = 1/(\sum_{e \in p^*}p_e^{(t)})$ and $f_p^{(t)} = 0$ for $p \neq p^*$, where $p^*$ is a shortest path. The $p_e^{(t)}$ are all positive so this \fbox{reduced problem can be solved in $O(n^2)$} (using Dijkstra's algorithm).
+Indeed, an feasible solution to the LP problem is given by $f_{p}^{(t)} = \frac{1}{\sum_{e \in p^*} p_e^{(t)}} =: len(p^*)$, where $p^*$ is a shortest path of length greater or equal to $1/(n^2)$. The $p_e^{(t)}$ are all positive so this \ul{reduced problem be solved in $O(n^2)$} (using \ul{Dijkstra's algorithm}).
 
 \subsubsection*{Bound on cost vectors}
 
-Let us establish the bound on the cost vectors. Let $t$. By positivity of $f_p^{(t)}$ for all $p$, $m_e^{(t)} \le 1$. On the other hand, consider $p^*$ a shortest path at time $t$. Then, since $\sum_{e \in p^*}p_e^{(t)} \le 1$, we have:
-$$m_e^{(t)} = 1 - \frac{1}{\sum_{e \in p^*}p_e^{(t)}} \ge 0$$
+Let us establish the bound on the cost vectors. Let $t$. By positivity of $f_p^{(t)}$ for all $p$, $m_e^{(t)} \le 1$. By 
 
+% TODO
 
 
 \subsubsection*{First requirement}
 
-By the corollary to the Hedge algorithm analysis, if we run the Hedge algorithm on these cost vectors in time $T = O(\rho^2\ln{|E|}/\epsilon^2)$ we get that for each edge $e$:
-$$\frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}m_e^{(t)} \leq \frac{1}{T}\sum_{t=1}^{T}m_e{(t)}+2\epsilon$$
+By the corollary to the Hedge algorithm analysis, if we run the Hedge algorithm on these cost vectors in time $T \ge 4\rho^2\ln{|E|}/\epsilon^2$ we get that for each edge $e$:
+$$\frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}m_e^{(t)} \leq \frac{1}{T}\sum_{t=1}^{T}m_e^{(t)}+2\epsilon$$
 
 The left-hand side is precisely:
 $$
@@ -85,14 +140,28 @@ So for all $e \in E$, \fbox{$\sum_{p:e \in p}\bar{f_p} \le 1 + 2\epsilon$}.
 Let $f_p^*$ be an optimal solution to the max-flow LP. Then it is a solution to the reduced LP problem for all $t$ since $\sum_{e \in p} p_e^{(t)} \le 1$ and $f_p^* \ge 0$ for all $p$, which implies that:
 $$\sum_{p\in \mathcal{P}:e\in p}\left(\sum_{e \in p} p_e^{(t)}\right)f_p^* \le \sum_{p \in \mathcal{P} : e\in p} f_p^* \le 1$$
 
-So, by maximality of $(f_p^{(t)})_p$ for the reduced LP problem,
+So, by maximality of $(f_p^{(t)})_t$ for the reduced LP problem,
 $$\sum_{p \in \mathcal{P}}f_p^{(t)} \ge OPT$$
+
+Also, following the hint, we remark that:
+
+$$
+
+$$
 
 By averaging the preceding result over $t$:
 $$\boxed{\sum_{p \in \mathcal{P}}\bar{f_p} \ge OPT}$$
 
 \subsubsection*{Runtime}
 
+% T but not multiply by oracle
+
 We remark that $\rho = poly(n)$ and $|E|=poly(n)$ so $T = O(\rho^2\ln{|E|}/\epsilon^2) = O(poly(n)/\epsilon^2)$. So our algorithm runs in time \fbox{$poly(n)/\epsilon^2$}.
+
+\newpage
+
+\section*{Problem 3}
+
+The solution was uploaded by the user \texttt{shilangyu}.
 
 \end{document}
