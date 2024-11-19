@@ -78,6 +78,20 @@ Therefore, we have a $\left(1-\frac{1}{e}\right)$-approximation.
 \newpage
 
 \section*{Problem 2}
+\subsubsection*{Equivalent formulation}
+Let $f$ be a feasible solution to the LP problem. We remark that:
+$$
+\sum_{p \in \mathcal{P}}f_p = \sum_{e \in E}\sum_{p \in \mathcal{P}: e \in p}f_p \le \sum_{e \in E}1\le|E| \le n^2
+$$
+
+So an equivalent formulation of the problem is given by:
+
+\begin{align*}
+    \text{maximize }&\sum_{p \in \mathcal{P}} f_p \\
+    \text{s.t. }&\sum_{p \in \mathcal{P} : e \in p} f_p \le 1 \qquad
+\forall e \in E \\
+    &\sum_{p \in \mathcal{P}}f_p \le n^2
+\end{align*}
 
 \subsubsection*{Algorithm}
 
@@ -107,13 +121,16 @@ At a given time $t$, the reduced LP problem is:
 \forall p \in P, f_p^{(t)} \ge 0 \\
     &\sum_{p \in \mathcal{P}}f_p^{(t)} \le n^2
 \end{align*}
-The reduced LP problem amounts exactly to finding a \ul{shortest path} $p^*$ between $s$ and $t$ of length greater or equal to $\frac{1}{n^2}$ in the same graph with weights on edges given by $(p_e^{(t)})_{e\in E}$.
 
-Indeed, an feasible solution to the LP problem is given by $f_{p}^{(t)} = \frac{1}{\sum_{e \in p^*} p_e^{(t)}} =: len(p^*)$, where $p^*$ is a shortest path of length greater or equal to $1/(n^2)$. The $p_e^{(t)}$ are all positive so this \ul{reduced problem be solved in $O(n^2)$} (using \ul{Dijkstra's algorithm}).
+Let us consider the same graph as $G$ with weights on edges given by $(p_e^{(t)})_{e\in E}$. Let us denote that graph $G'$.
+
+The reduced LP problem amounts exactly to finding a \ul{shortest path} $p^*$ between $s$ and $t$ in $G'$.
+
+Indeed, an optimal solution to the LP problem is given by $f_{p}^{(t)} = \min\left(\frac{1}{\sum_{e \in p^*} p_e^{(t)}}, n^2\right)$, where $p^*$ is a shortest path in $G'$. The $p_e^{(t)}$ are all positive so this \ul{reduced problem be solved in $O(n^2)$} using \ul{Dijkstra's algorithm}. This is an even simpler case than the fractional knapsack, because we can put all the "weight" on one path only.
 
 \subsubsection*{Bound on cost vectors}
 
-Let us establish the bound on the cost vectors. Let $t$. By positivity of $f_p^{(t)}$ for all $p$, $m_e^{(t)} \le 1$. By 
+Let us establish the bound on the cost vectors. Let $t$. By positivity of $f_p^{(t)}$ for all $p$, $m_e^{(t)} \le 1$. Since $\sum_{p\in\mathcal{P}}f_p^{(t)} \le n^2$, we get that $m_e(t) \ge 1 - n^2$. So we have a bound $\rho:=max_{t,e}(|m_e^{(t)}|)$ in $poly(n)$ on the cost vectors.
 
 % TODO
 
@@ -123,7 +140,7 @@ Let us establish the bound on the cost vectors. Let $t$. By positivity of $f_p^{
 By the corollary to the Hedge algorithm analysis, if we run the Hedge algorithm on these cost vectors in time $T \ge 4\rho^2\ln{|E|}/\epsilon^2$ we get that for each edge $e$:
 $$\frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}m_e^{(t)} \leq \frac{1}{T}\sum_{t=1}^{T}m_e^{(t)}+2\epsilon$$
 
-The left-hand side is precisely:
+Let $e \in E$. The left-hand side is precisely:
 $$
 \frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}m_e^{(t)}
     = \frac{1}{T}\sum_{t = 1}^{T}\sum_e p_e^{(t)}\left(1 - \sum_{p\in\mathcal{P} : e \in p}f_p^{(t)}\right) \\
@@ -137,17 +154,16 @@ So for all $e \in E$, \fbox{$\sum_{p:e \in p}\bar{f_p} \le 1 + 2\epsilon$}.
 
 \subsubsection*{Second requirement}
 
-Let $f_p^*$ be an optimal solution to the max-flow LP. Then it is a solution to the reduced LP problem for all $t$ since $\sum_{e \in p} p_e^{(t)} \le 1$ and $f_p^* \ge 0$ for all $p$, which implies that:
+Let $f^*$ be an optimal solution to the max-flow LP. Since $\sum_{e \in p} p_e^{(t)} \le 1$ and $f_p^* \ge 0$ for all $p$, we have:
 $$\sum_{p\in \mathcal{P}:e\in p}\left(\sum_{e \in p} p_e^{(t)}\right)f_p^* \le \sum_{p \in \mathcal{P} : e\in p} f_p^* \le 1$$
 
-So, by maximality of $(f_p^{(t)})_t$ for the reduced LP problem,
-$$\sum_{p \in \mathcal{P}}f_p^{(t)} \ge OPT$$
-
-Also, following the hint, we remark that:
-
+Also, by our equivalent formulation:
 $$
-\sum{p \in \mathcal{P}}
+\sum_{p \in \mathcal{P}}f_p \le n^2
 $$
+
+Hence, $f^*$ is a feasible solution of the reduced LP problem. Let $t$. By maximality of $(f_p^{(t)})_p$ for the reduced LP problem,
+$$\sum_{p \in \mathcal{P}} f_p^{(t)} \ge OPT$$
 
 By averaging the preceding result over $t$:
 $$\boxed{\sum_{p \in \mathcal{P}}\bar{f_p} \ge OPT}$$
@@ -156,7 +172,9 @@ $$\boxed{\sum_{p \in \mathcal{P}}\bar{f_p} \ge OPT}$$
 
 % T but not multiply by oracle
 
-We remark that $\rho = poly(n)$ and $|E|=poly(n)$ so $T = O(\rho^2\ln{|E|}/\epsilon^2) = O(poly(n)/\epsilon^2)$. So our algorithm runs in time \fbox{$poly(n)/\epsilon^2$}.
+We remark that $\rho = poly(n)$ and $|E|=poly(n)$ so $T = O(4\rho^2\ln{|E|}/\epsilon^2) = O(poly(n)/\epsilon^2)$. Each iteration is in $poly(n)$ since the oracle is in $poly(n)$.
+
+All in all, our algorithm runs in time \fbox{$poly(n)/\epsilon^2$}.
 
 \newpage
 
