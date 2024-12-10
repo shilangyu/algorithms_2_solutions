@@ -1,0 +1,46 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry} 
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{verbatim}
+\usepackage{soul}
+
+\title{Homework 2}
+\author{
+    Jonathan Arnoult \\ jonathan.arnoult@epfl.ch
+    \and Emilien Ganier \\ emilien.ganier@epfl.ch
+    \and Marcin Wojnarowski \\ marcin.wojnarowski@epfl.ch
+}
+
+\newtheorem{claim}{Claim}
+
+\date{\today}
+\begin{document}
+
+\maketitle
+
+\section*{Problem 1}
+
+
+\newpage
+
+\section*{Problem 2}
+
+We consider the set of vectors $\{ 0,1\} ^d$, this set has size $2^d$. Alice projects this set to obtain $2^d$ vectors in $\mathbf{R}^n$ using $A$, to have a set $x_1,x_2,\dots x_{2^d}$ where $x_i=A\mathbf{1}_C$. Now Alice uses Johnson-Lindenstrauss lemma to create a matrix $M\in \mathbf{R}^{m\times n}$ where $m=\mathcal{O}\left(\frac{d}{\epsilon^2}\right)$. She finally computes the matrix $B=MA$ where $B\in \mathbf{R}^{m\times d}$ and gives this matrix to Bob ($\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$ elements).
+\\\\
+Now Bob will apply LSH algorithm as in lecture 20 to solve ANNS(c,r) problem. To do that he needs to be able to compute $dist(\mathbf{1}_C,b) = B\mathbf{1}_C-Mb$. Here I assume that Bob also knows $M$ (if that's what "shared source of randomness" means). If ANNS is done properly with the right values for $r$, Bob outputs best vector $\mathbf{1}$ with probability $1-\frac{1}{2^d}$. Best vector means $dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)$.
+\\\\
+With JL lemma we have $$(1-\epsilon)\|A\mathbf{1}-b\|\leq dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)\leq c*(1+\epsilon)*\min \|A\mathbf{1}_C-b\|$$ which is more or less what we want. I think that $c=1+\epsilon$ would work, you could then take $\epsilon_0=\frac{\epsilon}{4}$ which doesn't change $\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$.
+
+\newpage
+
+\section*{Problem 3}
+
+The solution was uploaded by user \texttt{shilangyu}.
+
+\end{document}
