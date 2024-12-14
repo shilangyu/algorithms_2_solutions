@@ -249,17 +249,22 @@ int main() {
       }
 
       // find j*
-      for (size_t i = 1; i < u.size(); i++) {
-        auto has = ds.query(u[i]).has_value();
+      int low = 0;
+      int high = u.size() - 1;
+      while (low <= high) {
+        int mid = low + (high - low) / 2;
+        bool has = ds.query(u[mid]).has_value();
 
-        if (!has) {
-          // TODO: what happens when j* = 0?
-          if (i != 1) {
-            q[I[i - 2]] = 1 - q[I[i - 2]];
-            is_not_bottom = ds.query(q).has_value();
-          }
-          break;
+        if (has) {
+          low = mid + 1;
+        } else {
+          high = mid - 1;
         }
+      }
+
+      if (low > 1) {
+        q[I[low - 2]] = 1 - q[I[low - 2]];
+        is_not_bottom = ds.query(q).has_value();
       }
     }
 
