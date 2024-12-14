@@ -210,13 +210,10 @@ int main() {
   offlineANNS ds(d, r, c, n, z);
   // onlineANNS ds(d);
 
-  // TODO: how many trials?
-  auto trials = 123456;
-
   int mu =
       min(r, static_cast<int>(ceil(2.0 * exp(1) * exp(1) * (log(n) + 1.0))));
 
-  for (size_t _ = 0; _ < trials; _++) {
+  for (size_t _ = 0; _ < N; _++) {
     // sample q
     vector<int> indices(d);
     iota(indices.begin(), indices.end(), 0);
@@ -231,27 +228,35 @@ int main() {
       int w = static_cast<int>(ceil(c * r)) + 1 - hammingDist(q, z, d);
 
       // sample I
-      vector<int> indices;
+      vector<int> I;
       for (int i = 0; i < d; i++) {
         if (q[i] == z[i]) {
-          indices.push_back(i);
+          I.push_back(i);
         }
       }
-      shuffle(indices.begin(), indices.end(), g);
-      indices.resize(w);
+      shuffle(I.begin(), I.end(), g);
+      I.resize(w);
+
+      // compute u's
+      vector<vector<int>> u;
+      u.push_back(q);
+      for (size_t i = 0; i < w; i++) {
+        auto previous = u.back();
+        previous[I[i]] = 1 - previous[I[i]];
+        u.push_back(previous);
+      }
 
       // find j*
-      vector<int> u = q;
-      optional<int> prev = nullopt;
-      for (int i : indices) {
-        u[i] = 1 - u[i];
-        if (!ds.query(u).has_value()) {
-          if (prev.has_value()) {
-            q[prev.value()] = 1 - q[prev.value()];
+      for (size_t i = 1; i < u.size(); i++) {
+        auto has = ds.query(u[i]).has_value();
+
+        if (!has) {
+          // TODO: what happens when j* = 0?
+          if (i != 1) {
+            q[I[i - 2]] = 1 - q[I[i - 2]];
           }
           break;
         }
-        prev = i;
       }
     }
 
