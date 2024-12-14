@@ -1,4 +1,8 @@
-#include <time.h>
+// Solution by team:
+// - Marcin Wojnarowski (376886)
+// - Jonathan Arnoult (369910)
+// - Emilien Ganier (369941)
+
 #include <algorithm>
 #include <iostream>
 #include <iterator>
@@ -6,11 +10,6 @@
 #include <numeric>
 #include <random>
 #include <vector>
-
-//! Solution by team:
-//! - Marcin Wojnarowski (376886)
-//! - Jonathan Arnoult (369910)
-//! - Emilien Ganier (369941)
 
 using namespace std;
 
@@ -25,19 +24,19 @@ int hammingDist(const vector<int>& x, const vector<int>& y, int dim) {
   return count;
 }
 
-void printVector(const vector<int>& x, int dim) {
-  for (int i = 0; i < dim; i++) {
-    cout << x[i] << (i != dim - 1 ? " " : "");
+void printVector(const vector<int>& x) {
+  for (int i = 0; i < x.size(); i++) {
+    cout << x[i] << (i != x.size() - 1 ? " " : "");
   }
   cout << endl;
   cout.flush();
 }
 
 /* reports a solution using the format demanded by the Codeforces problem */
-void reportSolution(const vector<int>& x, int dim) {
+void reportSolution(const vector<int>& x) {
   cout << "* ";
   cout.flush();
-  printVector(x, dim);
+  printVector(x);
 }
 
 /* to be used when running locally */
@@ -118,9 +117,7 @@ class offlineANNS {
   }
 
   /* issues a query to the ANNS data structure and returns the answer */
-  vector<int> query(const vector<int>& q) {
-    vector<int> a;
-
+  optional<vector<int>> query(const vector<int>& q) {
     int found = -1;
     for (int u = 0; u < l && found == -1; u++) {
       vector<int> qHash = vector<int>(k, -1);
@@ -141,15 +138,14 @@ class offlineANNS {
     }
 
     if (found == -1) {
-      a = vector<int>(1, -1);
+      return nullopt;
     } else {
-      a = vector<int>(d, -1);
+      auto a = vector<int>(d, -1);
       for (int i = 0; i < d; i++) {
         a[i] = P[found][i];
       }
+      return a;
     }
-
-    return a;
   }
 };
 
@@ -166,7 +162,7 @@ class onlineANNS {
   optional<vector<int>> query(const vector<int>& q) {
     cout << "q ";
     cout.flush();
-    printVector(q, d);
+    printVector(q);
 
     vector<int> answer = vector<int>();
     int size;
@@ -210,22 +206,15 @@ int main() {
     cin >> z[i];
   }
 
-  /* use offlineANNS to test locally, use onlineANNS for submitting to
-   * Codeforces */
-  // offlineANNS ds(d, r, c, n,
-  //                z);  // this also reads the remaining n-1 points in the
-  //                dataset
   onlineANNS ds(d);
 
-  /* your algorithm goes here */
-
   // TODO: how many trials?
-  auto trials = 123;
+  auto trials = 123456;
 
-  for (size_t i = 0; i < trials; i++) {
-    int mu =
-        min(r, static_cast<int>(ceil(2.0 * exp(1) * exp(1) * (log(n) + 1.0))));
+  int mu =
+      min(r, static_cast<int>(ceil(2.0 * exp(1) * exp(1) * (log(n) + 1.0))));
 
+  for (size_t _ = 0; _ < trials; _++) {
     // sample q
     vector<int> indices(d);
     iota(indices.begin(), indices.end(), 0);
@@ -257,19 +246,18 @@ int main() {
         if (!ds.query(u).has_value()) {
           if (prev.has_value()) {
             q[prev.value()] = 1 - q[prev.value()];
-            break;
           }
+          break;
         }
         prev = i;
       }
     }
 
     if (!ds.query(q).has_value() && hammingDist(q, z, d) <= r) {
-      /* report solution */
-      reportSolution(q, d);
+      reportSolution(q);
       return 0;
     }
   }
 
-  return -1;
+  return 1;
 }
