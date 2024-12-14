@@ -5,7 +5,37 @@
 //! - Jonathan Arnoult (369910)
 //! - Emilien Ganier (369941)
 
-use std::io::{self, BufRead, Write};
+use core::f64;
+use std::io::{self, BufRead, Read, Write};
+
+/// Rust std has no random generators. This is based on:
+/// https://github.com/rust-lang/rust/blob/1.55.0/library/core/src/slice/sort.rs#L559-L573
+fn random_numbers() -> impl FnMut() -> u32 {
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
+
+    let mut random = RandomState::new().build_hasher().finish() as u32;
+    move || {
+        random ^= random << 13;
+        random ^= random >> 17;
+        random ^= random << 5;
+        random
+    }
+}
+
+fn manhattan_distance(a: &[bool], b: &[bool]) -> usize {
+    assert_eq!(a.len(), b.len());
+    a.iter().zip(b.iter()).filter(|(x, y)| x != y).count()
+}
+
+fn shuffle<T>(vec: &mut [T]) {
+    let mut rand = random_numbers();
+    let n = vec.len();
+    for i in 0..(n - 1) {
+        let j = (rand() as usize) % (n - i) + i;
+        vec.swap(i, j);
+    }
+}
 
 struct Input {
     d: usize,
@@ -53,7 +83,67 @@ impl FromIterator<String> for Input {
 
 impl Input {
     fn solve(&self) -> Option<Vec<bool>> {
-        todo!()
+        // TODO: how many trails?
+        let trials = 123;
+
+        for _ in 0..trials {
+            if let Some(result) = self.solve_once() {
+                return Some(result);
+            }
+        }
+
+        None
+    }
+
+    fn solve_once(&self) -> Option<Vec<bool>> {
+        let anns = OnlineANNS::new(self.d);
+        let mu = std::cmp::min(
+            self.r,
+            (2.0 * f64::consts::E * f64::consts::E * (f64::ln(self.n as f64) + 1.0)).ceil()
+                as usize,
+        );
+
+        // sample q
+        let mut indices = (0..self.d).collect::<Vec<_>>();
+        shuffle(&mut indices);
+        let mut q = self.center.clone();
+        for i in indices.iter().take(self.r - mu) {
+            q[*i] = !q[*i];
+        }
+        drop(indices);
+
+        while anns.query(&q).is_some() && manhattan_distance(&q, &self.center) < self.r {
+            let w =
+                (self.c * self.r as f64).ceil() as usize + 1 - manhattan_distance(&q, &self.center);
+
+            // sample I
+            let mut indices = (0..self.d)
+                .filter(|&i| q[i] == self.center[i])
+                .collect::<Vec<_>>();
+            shuffle(&mut indices);
+            indices.truncate(w);
+
+            // find j*
+            let mut u = q.clone();
+            let mut prev = None;
+            for i in indices {
+                u[i] = !u[i];
+                if anns.query(&u).is_none() {
+                    if let Some(j) = prev {
+                        // TODO: what happened here with the type annotation?
+                        q[j] = !(q[j] as bool);
+                        break;
+                    }
+                }
+                prev = Some(i);
+            }
+        }
+
+        if anns.query(&q).is_none() && manhattan_distance(&q, &self.center) <= self.r {
+            Some(q)
+        } else {
+            None
+        }
     }
 }
 
@@ -71,14 +161,16 @@ impl OnlineANNS {
         println!(
             "q {}",
             q.iter()
-                .map(|&b| if b { "1" } else { "b" })
+                .map(|&b| if b { "1" } else { "0" })
                 .collect::<Vec<_>>()
                 .join(" ")
         );
         io::stdout().flush().unwrap();
 
-        let mut line = String::new();
-        std::io::stdin().read_line(&mut line).unwrap();
+        let mut buf = vec![];
+        #[allow(clippy::unused_io_amount)]
+        std::io::stdin().read(&mut buf).unwrap();
+        let line = String::from_utf8(buf).unwrap();
         let mut response = line.trim().split(' ');
         let size: usize = response.next().unwrap().parse().unwrap();
 
@@ -95,6 +187,7 @@ impl OnlineANNS {
         Some(answer)
     }
 }
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = io::stdin();
     let iterator = stdin.lock().lines().collect::<Result<Vec<_>, _>>()?;
@@ -110,6 +203,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .collect::<Vec<_>>()
                 .join(" ")
         );
+        io::stdout().flush().unwrap();
     } else {
         panic!("Failed to solve");
     }
