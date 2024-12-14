@@ -9,6 +9,7 @@
 \usepackage{enumitem}
 \usepackage{verbatim}
 \usepackage{soul}
+\usepackage{bbm}
 
 \title{Homework 2}
 \author{
@@ -19,23 +20,62 @@
 
 \newtheorem{claim}{Claim}
 
-\date{\today}
+\date{December 20, 2024}
 \begin{document}
 
 \maketitle
 
 \section*{Problem 1}
 
+\subsubsection*{Expected number of edges}
+
+$$\mathbb{E}\left[|E'|\right] = \mathbb{E}\left[\sum_{e\in E}\mathbbm{1}_{e \in E'}\right] = \sum_{e\in E}\mathbb{P}(e \in E') = \sum_{e \in E'}p = pm = \boxed{\mathcal{O}\left(\frac{n}{\varepsilon^2}\right)}$$
+
+Which gives the first result.
+
+\subsubsection*{Bound on the cuts}
+
+Let $S \subseteq V$.
+
+$$E_{G'(S)} = \sum_{a \in S,\, b \notin S} w(a, b) \mathbbm{1}_{e \in E'} = \frac{1}{p} \sum_{a \in S,\, b \notin S} \mathbbm{1}_{e \in E'}$$
+
+In other words, $p E_{G'(S)}$ is a sum of $|\left\{(a, b) \in V^2 \,|\, a \in S, b \notin S\right\}|$ \ul{independent Bernouilli variables} $X_{(a,b)} := \mathbbm{1}_{(a,b) \in E'}$. Its mean is :
+
+$$\mu := \mathbb{E}\left[ p E_{G'}(S) \right] = \sum_{a \in S,\, b \notin S} \mathbb{E}\left[\mathbbm{1}_{e \in E'}\right] = \sum_{a \in S,\, b \notin S} p = p \times \sum_{a \in S,\, b \notin S} 1 = p E_G(S)$$
+
+We apply the \ul{Chernoff bounds} using $\delta := \frac{\varepsilon m}{E_G(S)}$ to get:
+
+$$\mathbb{P}\left[|E_{G'(S)} - \mu| \ge \delta \mu\right] \le 2 e^{-\delta^2\mu/3}$$
+
+The left-hand side is precisely
+
+$$\mathbb{P}\left[|p E_{G'(S)} - p E_{G(S)}| \ge p \varepsilon m\right] = 1 - \mathbb{P}\left[E_{G(S)} - \varepsilon m \le E_{G'(S)} \le E_{G(S)} + \varepsilon m\right]$$
+
+From which we deduce
+
+$$\mathbb{P}\left[E_{G(S)} - \varepsilon m \le E_{G'(S)} \le E_{G(S)} + \varepsilon m\right] \ge 1 - 2e^{-\delta^2\mu/3}$$
+
+Now, it suffices to remark that:
+
+$$\delta^2\mu/3 = \frac{cnm}{E_G(S)} \ge nc/3$$
+
+Since $E_G(S) \le m$. Finally, we have (using the fact that $n \ge 1$):
+
+$$2e^{-\delta^2\mu/3} \le 2^n e^{-\delta^2\mu/3} \le 2^n e^{-cn/3} = d^n $$
+
+where $d := 2e^{- c/3} < 1$, by requiring that $c > 3ln2$.
+
+Whence $$\boxed{\forall S \subseteq V,\, \mathbb{P}\left[E_{G(S)} - \varepsilon m \le E_{G'(S)} \le E_{G(S)} + \varepsilon m\right] \ge 1-d^n}$$
 
 \newpage
 
 \section*{Problem 2}
 
-We consider the set of vectors $\{ 0,1\} ^d$, this set has size $2^d$. Alice projects this set to obtain $2^d$ vectors in $\mathbf{R}^n$ using $A$, to have a set $x_1,x_2,\dots x_{2^d}$ where $x_i=A\mathbf{1}_C$. Now Alice uses Johnson-Lindenstrauss lemma to create a matrix $M\in \mathbf{R}^{m\times n}$ where $m=\mathcal{O}\left(\frac{d}{\epsilon^2}\right)$. She finally computes the matrix $B=MA$ where $B\in \mathbf{R}^{m\times d}$ and gives this matrix to Bob ($\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$ elements).
+We consider the set of vectors $\{ 0,1\} ^d$, this set has size $2^d$. Alice projects this set to obtain $2^d$ vectors in $\mathbf{R}^n$ using $A$, to have a set $x_1,x_2,\dots x_{2^d}$ where $x_i=A\mathbf{1}_C$. Now Alice uses the Johnson-Lindenstrauss lemma to create a matrix $M\in \mathbf{R}^{m\times n}$ where $m=\mathcal{O}\left(\frac{d}{\epsilon^2}\right)$. She finally computes the matrix $B=MA$ where $B\in \mathbf{R}^{m\times d}$ and gives this matrix to Bob ($\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$ elements).
 \\\\
-Now Bob will apply LSH algorithm as in lecture 20 to solve ANNS(c,r) problem. To do that he needs to be able to compute $dist(\mathbf{1}_C,b) = B\mathbf{1}_C-Mb$. Here I assume that Bob also knows $M$ (if that's what "shared source of randomness" means). If ANNS is done properly with the right values for $r$, Bob outputs best vector $\mathbf{1}$ with probability $1-\frac{1}{2^d}$. Best vector means $dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)$.
+Now Bob will apply the LSH algorithm as in lecture 20 to solve the ANNS(c,r) problem. To do that, he needs to be able to compute $dist(\mathbf{1}_C,b) = B\mathbf{1}_C-Mb$. Here I assume that Bob also knows $M$ (if that's what "shared source of randomness" means). If ANNS is done properly with the right values for $r$, Bob outputs best vector $\mathbf{1}$ with probability $1-\frac{1}{2^d}$. The best vector means $dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)$.
 \\\\
-With JL lemma we have $$(1-\epsilon)\|A\mathbf{1}-b\|\leq dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)\leq c*(1+\epsilon)*\min \|A\mathbf{1}_C-b\|$$ which is more or less what we want. I think that $c=1+\epsilon$ would work, you could then take $\epsilon_0=\frac{\epsilon}{4}$ which doesn't change $\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$.
+With the JL lemma we have $$(1-\epsilon)\|A\mathbf{1}-b\|\leq dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)\leq c*(1+\epsilon)*\min \|A\mathbf{1}_C-b\|$$ which is more or less what we want. I think $c=1+\epsilon$ would work, you could then take $\epsilon_0=\frac{\epsilon}{4}$ which does not change $\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$.
 
 \newpage
 
