@@ -224,7 +224,9 @@ int main() {
       q[indices[i]] = 1 - q[indices[i]];
     }
 
-    while (ds.query(q).has_value() && hammingDist(q, z, d) < r) {
+    auto is_not_bottom = ds.query(q).has_value();
+
+    while (is_not_bottom && hammingDist(q, z, d) < r) {
       int w = static_cast<int>(ceil(c * r)) + 1 - hammingDist(q, z, d);
 
       // sample I
@@ -254,13 +256,14 @@ int main() {
           // TODO: what happens when j* = 0?
           if (i != 1) {
             q[I[i - 2]] = 1 - q[I[i - 2]];
+            is_not_bottom = ds.query(q).has_value();
           }
           break;
         }
       }
     }
 
-    if (!ds.query(q).has_value() && hammingDist(q, z, d) <= r) {
+    if (!is_not_bottom && hammingDist(q, z, d) <= r) {
       reportSolution(q);
       return 0;
     }
