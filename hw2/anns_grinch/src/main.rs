@@ -57,6 +57,43 @@ impl Input {
     }
 }
 
+struct OnlineANNS {
+    d: usize,
+}
+
+impl OnlineANNS {
+    fn new(dim: usize) -> Self {
+        Self { d: dim }
+    }
+
+    fn query(&self, q: &[bool]) -> Option<Vec<bool>> {
+        assert_eq!(q.len(), self.d);
+        println!(
+            "q {}",
+            q.iter()
+                .map(|&b| if b { "1" } else { "b" })
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
+
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+        let mut response = line.trim().split(' ');
+        let size: usize = response.next().unwrap().parse().unwrap();
+
+        if size == 1 {
+            return None;
+        }
+
+        assert!(size == self.d);
+
+        let answer = response.map(|c| c == "1").collect::<Vec<_>>();
+
+        assert!(answer.len() == self.d);
+
+        Some(answer)
+    }
+}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = io::stdin();
     let iterator = stdin.lock().lines().collect::<Result<Vec<_>, _>>()?;
@@ -93,7 +130,15 @@ mod tests {
         assert_eq!(input.d, 10);
         assert_eq!(input.r, 2);
         assert_eq!(input.c, 1.5);
-        assert_eq!(input.queries, 60);
         assert_eq!(input.kids.len(), 3);
+        assert_eq!(input.queries, 60);
+        assert_eq!(
+            input.kids,
+            vec![
+                vec![false; 10],
+                vec![true; 10],
+                vec![true, true, true, false, true, false, true, true, true, true]
+            ]
+        );
     }
 }
