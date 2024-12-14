@@ -5,14 +5,15 @@
 //! - Jonathan Arnoult (369910)
 //! - Emilien Ganier (369941)
 
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 
 struct Input {
     d: usize,
     r: usize,
     c: f64,
+    n: usize,
     queries: usize,
-    kids: Vec<Vec<bool>>,
+    center: Vec<bool>,
 }
 
 impl FromIterator<String> for Input {
@@ -30,29 +31,28 @@ impl FromIterator<String> for Input {
             header.next().unwrap().parse().unwrap(),
         );
 
-        let kids = iter
-            .map(|line| {
-                let line = line.split(' ').map(|l| l == "1").collect::<Vec<_>>();
-
-                assert!(line.len() == d);
-                line
-            })
+        let center = iter
+            .next()
+            .unwrap()
+            .split(' ')
+            .map(|l| l == "1")
             .collect::<Vec<_>>();
 
-        assert_eq!(kids.len(), n);
+        assert_eq!(center.len(), d);
 
         Self {
             d,
             r,
             c,
+            n,
             queries,
-            kids,
+            center,
         }
     }
 }
 
 impl Input {
-    fn solve(self) -> bool {
+    fn solve(&self) -> Option<Vec<bool>> {
         todo!()
     }
 }
@@ -75,6 +75,7 @@ impl OnlineANNS {
                 .collect::<Vec<_>>()
                 .join(" ")
         );
+        io::stdout().flush().unwrap();
 
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
@@ -100,10 +101,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let input = iterator.into_iter().collect::<Input>();
 
-    if input.solve() {
-        println!("yes");
+    if let Some(result) = input.solve() {
+        println!(
+            "* {}",
+            result
+                .iter()
+                .map(|&b| if b { "1" } else { "0" })
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
     } else {
-        println!("no")
+        panic!("Failed to solve");
     }
 
     Ok(())
@@ -115,8 +123,6 @@ mod tests {
 
     const EXAMPLE_INPUT: &str = "10 2 1.5 3 60
 0 0 0 0 0 0 0 0 0 0
-1 1 1 1 1 1 1 1 1 1
-1 1 1 0 1 0 1 1 1 1
 ";
 
     fn get(s: &str) -> Input {
@@ -130,15 +136,8 @@ mod tests {
         assert_eq!(input.d, 10);
         assert_eq!(input.r, 2);
         assert_eq!(input.c, 1.5);
-        assert_eq!(input.kids.len(), 3);
+        assert_eq!(input.n, 3);
         assert_eq!(input.queries, 60);
-        assert_eq!(
-            input.kids,
-            vec![
-                vec![false; 10],
-                vec![true; 10],
-                vec![true, true, true, false, true, false, true, true, true, true]
-            ]
-        );
+        assert_eq!(input.center, vec![false; 10]);
     }
 }
