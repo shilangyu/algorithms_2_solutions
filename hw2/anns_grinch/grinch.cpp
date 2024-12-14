@@ -8,6 +8,7 @@
 #include <iterator>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <vector>
 
