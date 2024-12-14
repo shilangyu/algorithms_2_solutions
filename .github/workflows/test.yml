@@ -31,7 +31,7 @@ jobs:
       - name: Prepare build
         run: |
           mkdir build
-          echo '<ul><li><a href="./solutions1.pdf">solutions 1</a></li></ul>' > build/index.html
+          echo '<ul><li><a href="./solutions1.pdf">solutions 1</a></li><li><a href="./solutions2.pdf">solutions 2</a></li></ul>' > build/index.html
 
       - name: Check homework 1 example code
         working-directory: hw1/apples
@@ -55,9 +55,16 @@ jobs:
           working_directory: hw1
           root_file: main.tex
 
+      - name: Generate homework 2 solutions
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: hw2
+          root_file: main.tex
+
       - name: Move solutions
         run: |
           mv hw1/main.pdf build/solutions1.pdf
+          mv hw2/main.pdf build/solutions2.pdf
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
