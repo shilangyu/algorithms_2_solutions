@@ -55,6 +55,14 @@ jobs:
           working_directory: hw1
           root_file: main.tex
 
+      - name: Check homework 2 code
+        working-directory: hw2/anns_grinch
+        run: |
+          cargo clippy --verbose -- -Dwarnings
+          cargo fmt --check --verbose
+          cargo test --verbose
+          cargo build --verbose
+
       - name: Generate homework 2 solutions
         uses: xu-cheng/latex-action@v3
         with:
