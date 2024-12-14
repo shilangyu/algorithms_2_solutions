@@ -207,7 +207,8 @@ int main() {
     cin >> z[i];
   }
 
-  onlineANNS ds(d);
+  offlineANNS ds(d, r, c, n, z);
+  // onlineANNS ds(d);
 
   // TODO: how many trials?
   auto trials = 123456;
