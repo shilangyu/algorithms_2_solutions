@@ -262,10 +262,9 @@ int main() {
         }
       }
 
-      if (low > 1) {
-        q[I[low - 2]] = 1 - q[I[low - 2]];
-        is_not_bottom = ds.query(q).has_value();
-      }
+      // we know low != 0
+      q[I[low - 1]] = 1 - q[I[low - 1]];
+      is_not_bottom = ds.query(q).has_value();
     }
 
     if (!is_not_bottom && hammingDist(q, z, d) <= r) {
