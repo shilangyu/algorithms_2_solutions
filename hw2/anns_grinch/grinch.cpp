@@ -169,14 +169,14 @@ class onlineANNS {
     int size;
 
     cin >> size;
-    if (size == 1) {
-      return nullopt;
-    }
-
     for (int i = 0; i < size; i++) {
       int elem;
       cin >> elem;
       answer.push_back(elem);
+    }
+
+    if (size == 1) {
+      return nullopt;
     }
 
     return answer;
