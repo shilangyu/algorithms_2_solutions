@@ -55,6 +55,12 @@ jobs:
           working_directory: hw1
           root_file: main.tex
 
+      - name: Check homework 2 code
+        working-directory: hw2/anns_grinch
+        run: |
+          clang++ -std=c++20 -Wall grinch.cpp -o grinch
+          ./grinch < example_input
+
       - name: Generate homework 2 solutions
         uses: xu-cheng/latex-action@v3
         with:
