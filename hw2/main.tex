@@ -35,7 +35,7 @@ Which gives the first result.
 
 \subsubsection*{Bound on the cuts}
 
-Let $S \subseteq V$.
+Let $S \subseteq V$. If $E_G(S) = 0$, we get $E_G'(S) = 0$ too so the inequality is trivially verified. Let us now assume that $E_G(S)$ is non-null. We also assume $m$ to be non-zero, otherwise the problem does not make much sense (and $p$ would not be well-defined).
 
 $$E_{G'(S)} = \sum_{a \in S,\, b \notin S} w(a, b) \mathbbm{1}_{e \in E'} = \frac{1}{p} \sum_{a \in S,\, b \notin S} \mathbbm{1}_{e \in E'}$$
 
@@ -43,9 +43,27 @@ In other words, $p E_{G'(S)}$ is a sum of $|\left\{(a, b) \in V^2 \,|\, a \in S,
 
 $$\mu := \mathbb{E}\left[ p E_{G'}(S) \right] = \sum_{a \in S,\, b \notin S} \mathbb{E}\left[\mathbbm{1}_{e \in E'}\right] = \sum_{a \in S,\, b \notin S} p = p \times \sum_{a \in S,\, b \notin S} 1 = p E_G(S)$$
 
-We apply the \ul{Chernoff bounds} using $\delta := \frac{\varepsilon m}{E_G(S)}$ to get:
+We apply the \ul{Chernoff bounds} using $\delta := \frac{\varepsilon m}{E_G(S)} \le \frac{m}{E_G(S)}$ to get:
 
-$$\mathbb{P}\left[|E_{G'(S)} - \mu| \ge \delta \mu\right] \le 2 e^{-\delta^2\mu/3}$$
+$$\mathbb{P}\left[E_{G'(S)} \ge \mu + \delta \mu\right] \le e^{-\delta^2\mu/(2+\delta)}$$
+
+$$\mathbb{P}\left[E_{G'(S)} \le \mu - \delta \mu\right] \le e^{-\delta^2\mu/3}$$
+
+Now, use that $E_G(S) \le m$ to deduce that:
+
+$$2 + \delta \le 2 + \frac{m}{E_G(S)} = \frac{2 E_G(S) + m}{E_G(S)} \le \frac{2m + m}{E_G(S)} = \frac{3m}{E_G(S)}$$
+
+$$3 \le \frac{3m}{E_G(S)}$$
+
+So that we get a common bound for both events:
+
+$$\mathbb{P}\left[E_{G'(S)} \ge \mu + \delta \mu\right] \le e^{-\delta^2\mu E_G(S)/(3m)}$$
+
+$$\mathbb{P}\left[E_{G'(S)} \le \mu - \delta \mu\right] \le e^{-\delta^2\mu E_G(S)/(3m)}$$
+
+We can now apply union bound to deduce that:
+
+$$\mathbb{P}\left[|E_{G'(S)} - \mu| \ge \delta \mu\right] \le 2 e^{-\delta^2\mu E_G(S)/(3m)}$$
 
 The left-hand side is precisely
 
@@ -53,15 +71,15 @@ $$\mathbb{P}\left[|p E_{G'(S)} - p E_{G(S)}| \ge p \varepsilon m\right] = 1 - \m
 
 From which we deduce
 
-$$\mathbb{P}\left[E_{G(S)} - \varepsilon m \le E_{G'(S)} \le E_{G(S)} + \varepsilon m\right] \ge 1 - 2e^{-\delta^2\mu/3}$$
+$$\mathbb{P}\left[E_{G(S)} - \varepsilon m \le E_{G'(S)} \le E_{G(S)} + \varepsilon m\right] \ge 1 - 2e^{-\delta^2\mu E_G(S)/(3m)}$$
 
 Now, it suffices to remark that:
 
-$$\delta^2\mu/3 = \frac{cnm}{E_G(S)} \ge nc/3$$
+$$\frac{\delta^2\mu E_G(S)}{3m} = \frac{cn}{3}$$
 
-Since $E_G(S) \le m$. Finally, we have (using the fact that $n \ge 1$):
+Finally, we have (using the fact that $n \ge 1$):
 
-$$2e^{-\delta^2\mu/3} \le 2^n e^{-\delta^2\mu/3} \le 2^n e^{-cn/3} = d^n $$
+$$2e^{-\delta^2\mu E_G(S)/(3m)} \le 2^n e^{-\delta^2\mu E_G(S)/(3m)} \le 2^n e^{-cn/3} = d^n $$
 
 where $d := 2e^{- c/3} < 1$, by requiring that $c > 3ln2$.
 
@@ -71,15 +89,76 @@ Whence $$\boxed{\forall S \subseteq V,\, \mathbb{P}\left[E_{G(S)} - \varepsilon 
 
 \section*{Problem 2}
 
-We consider the set of vectors $\{ 0,1\} ^d$, this set has size $2^d$. Alice projects this set to obtain $2^d$ vectors in $\mathbf{R}^n$ using $A$, to have a set $x_1,x_2,\dots x_{2^d}$ where $x_i=A\mathbf{1}_C$. Now Alice uses the Johnson-Lindenstrauss lemma to create a matrix $M\in \mathbf{R}^{m\times n}$ where $m=\mathcal{O}\left(\frac{d}{\epsilon^2}\right)$. She finally computes the matrix $B=MA$ where $B\in \mathbf{R}^{m\times d}$ and gives this matrix to Bob ($\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$ elements).
+\textbf{Alice's part:}\\\\
+Alice has access to $\epsilon$, $d$, $n$ and the matrix $A$.\\
+We will use another number $\epsilon_0$ that we will define based on $\epsilon$ later.
+Alice uses the shared source of randomness to generate a matrix $M_0\in \mathbf{R}^{m\times n}$ where $m=\mathcal{O}\left(\frac{d}{\epsilon_0^2}\right)$ and $M_0$ has i.i.d elements sampled from $\mathcal{N}(0, 1)$. She defines $M=\frac{1}{\sqrt{m}}M_0$. Therefore, $M$ can be used as the matrix in the Johnson-Lindestrauss lemma, where we consider the vectors $x_1,x_2,\dots x_{2^d}$ in the set $\{A\mathbf{1}_C \in \mathbf{R}^n | C\subseteq [d]\}$.\\
+Now Alice computes the matrix $P=MA$ and sends this matrix to Bob. $P$ is a matrix in $\mathbf{R}^{m\times d}$.
 \\\\
-Now Bob will apply the LSH algorithm as in lecture 20 to solve the ANNS(c,r) problem. To do that, he needs to be able to compute $dist(\mathbf{1}_C,b) = B\mathbf{1}_C-Mb$. Here I assume that Bob also knows $M$ (if that's what "shared source of randomness" means). If ANNS is done properly with the right values for $r$, Bob outputs best vector $\mathbf{1}$ with probability $1-\frac{1}{2^d}$. The best vector means $dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)$.
+\textbf{Bob's part:}\\\\
+Bob has access to $\epsilon$, $d$, $n$ and the vector $b$.\\
+Bob receives the matrix $P$ from Alice.\\
+Bob also generates the matrix $M$ as Alice did, and since they use the same source of randomness, their matrices are both the same.\\
+Bob will use the LSH algorithm to perform ANNS problem on the set $\{P\mathbf{1}_C | C\subseteq [d]\}$.
+After preprocessing, he solves ANNS$(c, r)$ on the query point $Mb$: he follows lecture 20 and runs ANNS$(\frac{c}{1+\epsilon_0}, r)$ on a scaled version of the dataset for the following values of $r$:
+$$\delta, (1+\epsilon_0)\delta, (1+\epsilon_0)^2\delta,\dots,1$$ where $\delta$ can be the bit precision.
+Here we do not mind using a small value of $\delta$ since Bob is computationally unbounded.\\
+Finally, LSH returns in output a vector $P\mathbf{1}_{C'}$. We consider that he kept track of the index $C$ when he performs the projection $\mathbf{1}_C \longrightarrow P\mathbf{1}_C$, so he can recover the corresponding set $C'$. He can now buy the corresponding cheeses and enjoy his fondue.
 \\\\
-With the JL lemma we have $$(1-\epsilon)\|A\mathbf{1}-b\|\leq dist(\mathbf{1},b)\leq c*\min dist(\mathbf{1}_C,b)\leq c*(1+\epsilon)*\min \|A\mathbf{1}_C-b\|$$ which is more or less what we want. I think $c=1+\epsilon$ would work, you could then take $\epsilon_0=\frac{\epsilon}{4}$ which does not change $\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$.
+\textbf{Correctness:}\\\\
+The Johnson-Lindenstrauss lemma says that with probability at least $1-\frac{1}{2^{2d}}$, we have the following inequality:
+\begin{align}
+    (1-\epsilon_0)\lVert x_i-x_j\rVert \leq \lVert Mx_i - Mx_j\rVert \leq (1+\epsilon_0)\lVert x_i-x_j\rVert
+\end{align}
+where $x_i$ are taken from the set $\{A\mathbf{1}_C | C\subseteq [d]\}$.\\
+The LSH algorithm provides a point within distance $cr$ from $Mb$ (if it exists) with probability at least $1-\frac{1}{2^d}$. So, for the values proposed earlier, we have the following inequality (with probability at least $1-\frac{1}{2^d}$):
+\begin{align}
+    \lVert P\mathbf{1}_{C'}-Mb\rVert \leq \frac{c}{1+\epsilon_0}\min \lVert P\mathbf{1}_{C}-Mb\rVert
+\end{align}
+
+Combining both inequalities we get with probability $p\geq(1-\frac{1}{2^{2d}})(1-\frac{1}{2^d})$ (by independence):
+
+\begin{align}
+    (1-\epsilon_0)\lVert A\mathbf{1}_{C'} - b\rVert\leq{}&\lVert MA\mathbf{1}_{C'} - Mb\rVert\\
+    ={}&\lVert P\mathbf{1}_{C'} - Mb\rVert\\
+    \leq{}& \frac{c}{1+\epsilon_0}\min \lVert P\mathbf{1}_{C}-Mb\rVert\\
+    ={}& \frac{c}{1+\epsilon_0}\min \lVert MA\mathbf{1}_{C}-Mb\rVert\\
+    \leq{}& c\min\lVert A\mathbf{1}_{C'} - b\rVert
+\end{align}
+where (3) and (7) come from (1) and (5) comes from (2).\\
+Since $\frac{1}{1-\epsilon_0}\leq 1+2\epsilon_0$ for $\epsilon_0$ smaller  enough and if we fix $c=1+2\epsilon_0$ (so that $\frac{c}{1+\epsilon_0}>1$, we have
+\begin{align}
+    \lVert A\mathbf{1}_{C'} - b\rVert\leq (1+2\epsilon_0)^2\min\lVert A\mathbf{1}_{C'} - b\rVert
+\end{align}
+Let's observe that $(1+2\epsilon_0)^2=1+4\epsilon_0+4\epsilon_0^2$, which implies for $\epsilon_0<\frac{1}{4}$:
+\begin{align}
+    \lVert A\mathbf{1}_{C'} - b\rVert\leq (1+5\epsilon_0)\min\lVert A\mathbf{1}_{C'} - b\rVert
+\end{align}
+So we can choose $\epsilon_0<\frac{\epsilon}{5}$ (or smaller) to get the desired inequality.
+\\\\
+\textbf{Constraint 1:}\\\\
+The number of real numbers sent by Alice to Bob corresponds to matrix $P\in\mathbf{R}^{m\times d}$ where $m=\mathcal{O}\left(\frac{d}{\epsilon_0^2}\right)=\mathcal{O}\left(\frac{d}{\epsilon^2}\right)$. So the total number is $\mathcal{O}\left(\frac{d^2}{\epsilon^2}\right)$.
+\\\\
+\textbf{Constraint 2:}\\\\
+We need to compute the bound on probability $p$. We said that $p\geq(1-\frac{1}{2^{2d}})(1-\frac{1}{2^d})=1-\frac{1}{2^{2d}}-\frac{1}{2^d}+\frac{1}{2^{3d}}\geq 1-\frac{1}{2^{d-1}}$.\\
+So we have $p\geq 1-\frac{1}{2^{\mathcal{O}(d)}}$
+
 
 \newpage
 
 \section*{Problem 3}
+
+\subsubsection*{Part 1}
+
+ANNS guarantees that the probability that the data structure answers correctly to a given query is at least $1-1/n$. Thus, the probability that data structure fails to answer a given query is at most $1/n$.
+
+By union bound, the probability that the data structure fails to answer any query is at most $N/n$.
+
+\subsubsection*{Part 2}
+
+The probability for part 1 is for a fixed sequence, but here we choose the queries based on the previous ones.
+
+\subsubsection*{Implementation question}
 
 The solution was uploaded by user \texttt{shilangyu}.
 
