@@ -35,7 +35,7 @@ Which gives the first result.
 
 \subsubsection*{Bound on the cuts}
 
-Let $S \subseteq V$. If $E_G(S) = 0$, we get $E_G'(S) = 0$ too so the inequality is trivially verified. Let us now assume that $E_G(S)$ is non-null. We also assume $m$ to be non-zero, otherwise the problem does not make much sense (and $p$ would not be well-defined).
+Let $S \subseteq V$. If $E_G(S) = 0$, we get $E_{G'}(S) = 0$ too so the inequality is trivially verified. Let us now assume that $E_G(S)$ is non-null. We also assume $m$ to be non-zero, otherwise the problem does not make much sense (and $p$ would not be well-defined).
 
 $$E_{G'(S)} = \sum_{a \in S,\, b \notin S} w(a, b) \mathbbm{1}_{e \in E'} = \frac{1}{p} \sum_{a \in S,\, b \notin S} \mathbbm{1}_{e \in E'}$$
 
@@ -45,27 +45,27 @@ $$\mu := \mathbb{E}\left[ p E_{G'}(S) \right] = \sum_{a \in S,\, b \notin S} \ma
 
 We apply the \ul{Chernoff bounds} using $\delta := \frac{\varepsilon m}{E_G(S)} \le \frac{m}{E_G(S)}$ to get:
 
-$$\mathbb{P}\left[E_{G'(S)} \ge \mu + \delta \mu\right] \le e^{-\delta^2\mu/(2+\delta)}$$
+$$\mathbb{P}\left[p E_{G'(S)} \ge \mu + \delta \mu\right] \le e^{-\delta^2\mu/(2+\delta)}$$
 
-$$\mathbb{P}\left[E_{G'(S)} \le \mu - \delta \mu\right] \le e^{-\delta^2\mu/3}$$
+$$\mathbb{P}\left[p E_{G'(S)} \le \mu - \delta \mu\right] \le e^{-\delta^2\mu/2}$$
 
 Now, use that $E_G(S) \le m$ to deduce that:
 
 $$2 + \delta \le 2 + \frac{m}{E_G(S)} = \frac{2 E_G(S) + m}{E_G(S)} \le \frac{2m + m}{E_G(S)} = \frac{3m}{E_G(S)}$$
 
-$$3 \le \frac{3m}{E_G(S)}$$
+$$2 \le \frac{3m}{E_G(S)}$$
 
 So that we get a common bound for both events:
 
-$$\mathbb{P}\left[E_{G'(S)} \ge \mu + \delta \mu\right] \le e^{-\delta^2\mu E_G(S)/(3m)}$$
+$$\mathbb{P}\left[p E_{G'(S)} \ge \mu + \delta \mu\right] \le e^{-\delta^2\mu E_G(S)/(3m)}$$
 
-$$\mathbb{P}\left[E_{G'(S)} \le \mu - \delta \mu\right] \le e^{-\delta^2\mu E_G(S)/(3m)}$$
+$$\mathbb{P}\left[p E_{G'(S)} \le \mu - \delta \mu\right] \le e^{-\delta^2\mu E_G(S)/(3m)}$$
 
 We can now apply union bound to deduce that:
 
-$$\mathbb{P}\left[|E_{G'(S)} - \mu| \ge \delta \mu\right] \le 2 e^{-\delta^2\mu E_G(S)/(3m)}$$
+$$\mathbb{P}\left[|p E_{G'(S)} - \mu| \ge \delta \mu\right] \le 2 e^{-\delta^2\mu E_G(S)/(3m)}$$
 
-The left-hand side is precisely
+The left-hand side is precisely (dividing by $p >0$)
 
 $$\mathbb{P}\left[|p E_{G'(S)} - p E_{G(S)}| \ge p \varepsilon m\right] = 1 - \mathbb{P}\left[E_{G(S)} - \varepsilon m \le E_{G'(S)} \le E_{G(S)} + \varepsilon m\right]$$
 
